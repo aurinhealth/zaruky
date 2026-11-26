@@ -1,0 +1,20 @@
+{
+  "identifier" : "6E1B2C3D",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "199.0",
+      "familyShareable" : true,
+      "internalID" : "6740000001",
+      "localizations" : [
+        { "description" : "Neomezený počet účtenek navždy.", "displayName" : "Záruky navždy", "locale" : "cs" }
+      ],
+      "productID" : "cz.zaruky.app.lifetime",
+      "referenceName" : "Lifetime unlock",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : { "_storefront" : "CZE", "_locale" : "cs" },
+  "subscriptionGroups" : [],
+  "version" : { "major" : 4, "minor" : 0 }
+}
