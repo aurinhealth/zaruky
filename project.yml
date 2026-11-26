@@ -25,6 +25,7 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSCameraUsageDescription: Fotoaparát slouží ke skenování účtenek.
         NSPhotoLibraryUsageDescription: Přístup k Fotkám slouží k výběru fotky účtenky.
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cz.zaruky.app
