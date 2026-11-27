@@ -235,15 +235,17 @@ struct SettingsView: View {
                 }
             }
 
-            Picker(selection: $currency) {
-                ForEach(AppSettings.currencies, id: \.self) { code in
-                    Text("\(AppSettings.name(for: code)) (\(AppSettings.symbol(for: code)))").tag(code)
-                }
+            NavigationLink {
+                CurrencyPicker(selection: $currency)
             } label: {
-                Label {
-                    Text(L("Měna", "Currency"))
-                } icon: {
-                    SettingsIcon(symbol: "banknote.fill", color: .indigo)
+                LabeledContent {
+                    Text(AppSettings.name(for: currency))
+                } label: {
+                    Label {
+                        Text(L("Měna", "Currency"))
+                    } icon: {
+                        SettingsIcon(symbol: "banknote.fill", color: .indigo)
+                    }
                 }
             }
         } header: {
@@ -371,6 +373,53 @@ struct SettingsView: View {
             URLQueryItem(name: "body", value: "\n\n—\nZáruky \(AppInfo.version), iOS \(UIDevice.current.systemVersion)"),
         ]
         return parts.url
+    }
+}
+
+/// Searchable list of every currency, common ones on top.
+struct CurrencyPicker: View {
+    @Binding var selection: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+
+    private func matches(_ code: String) -> Bool {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return true }
+        return code.localizedCaseInsensitiveContains(q) || AppSettings.name(for: code).localizedCaseInsensitiveContains(q)
+    }
+
+    var body: some View {
+        List {
+            let common = AppSettings.commonCurrencies.filter(matches)
+            let other = AppSettings.allCurrencies.filter { !AppSettings.commonCurrencies.contains($0) && matches($0) }
+            if !common.isEmpty {
+                Section(L("Nejčastější", "Common")) { ForEach(common, id: \.self, content: row) }
+            }
+            if !other.isEmpty {
+                Section(L("Všechny měny", "All currencies")) { ForEach(other, id: \.self, content: row) }
+            }
+        }
+        .navigationTitle(L("Měna", "Currency"))
+        .searchable(text: $query, prompt: L("Hledat měnu", "Search currency"))
+    }
+
+    private func row(_ code: String) -> some View {
+        Button {
+            selection = code
+            dismiss()
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(AppSettings.name(for: code)).foregroundStyle(.primary)
+                    Text(code).font(.footnote).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if code == selection {
+                    Image(systemName: "checkmark").fontWeight(.semibold).foregroundStyle(Theme.brand)
+                }
+            }
+        }
+        .tint(.primary)
     }
 }
 

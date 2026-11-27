@@ -146,7 +146,10 @@ struct PurchaseFormView: View {
     }
 
     private var currencyOptions: [String] {
-        AppSettings.currencies.contains(currencyCode) ? AppSettings.currencies : AppSettings.currencies + [currencyCode]
+        // The common ones, plus the default and this receipt's currency if they are something else.
+        var options = AppSettings.commonCurrencies
+        for code in [AppSettings.currency, currencyCode] where !options.contains(code) { options.append(code) }
+        return options
     }
 
     private var pickerOptions: [Int] {
