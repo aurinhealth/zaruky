@@ -31,6 +31,7 @@ struct PurchaseListView: View {
     @State private var formContext: FormContext?
     @State private var showPaywall = false
     @State private var showSettings = false
+    @State private var showDemoViewer = false
     @State private var showExpired = true
 
     // Folder editing
@@ -140,6 +141,9 @@ struct PurchaseListView: View {
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(usedCount: purchases.count)
+        }
+        .fullScreenCover(isPresented: $showDemoViewer) {
+            ReceiptImageViewer(image: DemoMode.sampleInvoice)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
@@ -420,6 +424,7 @@ struct PurchaseListView: View {
             }
         case "paywall": showPaywall = true
         case "settings": showSettings = true
+        case "viewer": showDemoViewer = true
         case "form": formContext = FormContext(image: nil)
         case "folder": filter = folders.first.map { .folder($0.id) } ?? .all
         default: break

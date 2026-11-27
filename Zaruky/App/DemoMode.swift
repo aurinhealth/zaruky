@@ -1,9 +1,10 @@
 import Foundation
 import SwiftData
+import UIKit
 
 /// Launch arguments used by CI to take App Store style screenshots in the simulator:
 /// `-demo` opens an in-memory store with sample receipts (nothing touches iCloud or
-/// notifications), `-demoScreen detail|paywall|form|folder|settings|empty` opens that screen.
+/// notifications), `-demoScreen detail|paywall|form|folder|settings|viewer|empty` opens that screen.
 enum DemoMode {
     static let isOn = ProcessInfo.processInfo.arguments.contains("-demo")
 
@@ -49,5 +50,27 @@ enum DemoMode {
             context.insert(p)
         }
         try? context.save()
+    }
+
+    /// A tall A4-like invoice picture for the `viewer` screenshot (same size as an imported PDF page).
+    static var sampleInvoice: UIImage {
+        let size = CGSize(width: 1240, height: 1754)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            UIColor.white.setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            let big: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 64), .foregroundColor: UIColor.black]
+            let body: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 30), .foregroundColor: UIColor.black]
+            NSAttributedString(string: "FAKTURA – DAŇOVÝ DOKLAD", attributes: big).draw(at: CGPoint(x: 80, y: 90))
+            UIColor.black.setStroke()
+            for (i, line) in ["Alza.cz a.s., Jankovcova 1522/53, Praha 7", "Datum vystavení: 20.12.2024",
+                              "Apple Mac mini M4 10/10C 16/256GB       1 ks       17 490,00 Kč",
+                              "Celkem k úhradě                                    17 490,00 Kč",
+                              "Záruka 24 měsíců"].enumerated() {
+                NSAttributedString(string: line, attributes: body).draw(at: CGPoint(x: 80, y: 260 + CGFloat(i) * 70))
+            }
+            ctx.stroke(CGRect(x: 60, y: 220, width: size.width - 120, height: size.height - 300))
+        }
     }
 }
