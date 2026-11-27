@@ -173,7 +173,7 @@ struct PurchaseDetailView: View {
                     Image(uiImage: receiptImage)
                         .resizable()
                         .scaledToFill()
-                        .frame(height: 220)
+                        .frame(height: 220, alignment: .top)
                         .frame(maxWidth: .infinity)
                         .clipShape(.rect(cornerRadius: 14, style: .continuous))
                         .overlay(alignment: .bottomTrailing) {
@@ -327,23 +327,104 @@ struct PurchaseDetailView: View {
 struct ReceiptImageViewer: View {
     @Environment(\.dismiss) private var dismiss
     let image: UIImage
-    @State private var scale: CGFloat = 1
 
     var body: some View {
         NavigationStack {
-            ScrollView([.horizontal, .vertical]) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .scaleEffect(scale)
-                    .gesture(MagnifyGesture().onChanged { scale = max(1, $0.magnification) })
-            }
-            .background(Color.black)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L("Hotovo", "Done")) { dismiss() }
+            ZoomableImageView(image: image)
+                .ignoresSafeArea(edges: .bottom)
+                .background(Color.black)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(L("Hotovo", "Done")) { dismiss() }
+                    }
                 }
-            }
+        }
+    }
+}
+
+/// Photo-style viewer: opens with the whole receipt fitting the width (tall invoices scroll),
+/// pinch to zoom in and out, pan, double tap to zoom in or back.
+struct ZoomableImageView: UIViewRepresentable {
+    let image: UIImage
+
+    func makeUIView(context: Context) -> ZoomScrollView {
+        ZoomScrollView(image: image)
+    }
+
+    func updateUIView(_ view: ZoomScrollView, context: Context) {}
+}
+
+final class ZoomScrollView: UIScrollView, UIScrollViewDelegate {
+    private let imageView: UIImageView
+    private var lastBounds: CGSize = .zero
+
+    init(image: UIImage) {
+        imageView = UIImageView(image: image)
+        super.init(frame: .zero)
+        delegate = self
+        backgroundColor = .black
+        showsHorizontalScrollIndicator = false
+        decelerationRate = .fast
+        contentInsetAdjustmentBehavior = .never
+        imageView.frame = CGRect(origin: .zero, size: image.size)
+        addSubview(imageView)
+
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(doubleTapped(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        addGestureRecognizer(doubleTap)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    /// Zoom at which the whole width fits; very wide images also fit their height.
+    private var fitScale: CGFloat {
+        let size = imageView.image?.size ?? .zero
+        guard size.width > 0, size.height > 0, bounds.width > 0 else { return 1 }
+        let widthScale = bounds.width / size.width
+        let heightScale = bounds.height / size.height
+        // Tall receipts: fill the width and scroll. Wide photos: show them whole.
+        return size.height * widthScale > bounds.height ? widthScale : min(widthScale, heightScale)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.size != lastBounds, bounds.width > 0 else {
+            centerImage()
+            return
+        }
+        let wasAtFit = lastBounds == .zero || abs(zoomScale - minimumZoomScale) < 0.001
+        lastBounds = bounds.size
+        let fit = fitScale
+        minimumZoomScale = fit
+        maximumZoomScale = max(fit * 6, 1)
+        if wasAtFit || zoomScale < fit {
+            zoomScale = fit
+            contentOffset = CGPoint(x: -contentInset.left, y: -contentInset.top)
+        }
+        centerImage()
+    }
+
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? { imageView }
+
+    func scrollViewDidZoom(_ scrollView: UIScrollView) { centerImage() }
+
+    /// Keeps the image centred while it's smaller than the screen.
+    private func centerImage() {
+        let content = imageView.frame.size
+        let x = max(0, (bounds.width - content.width) / 2)
+        let y = max(0, (bounds.height - content.height) / 2)
+        contentInset = UIEdgeInsets(top: y, left: x, bottom: y, right: x)
+    }
+
+    @objc private func doubleTapped(_ gesture: UITapGestureRecognizer) {
+        if zoomScale > minimumZoomScale * 1.05 {
+            setZoomScale(minimumZoomScale, animated: true)
+        } else {
+            let point = gesture.location(in: imageView)
+            let target = min(minimumZoomScale * 2.5, maximumZoomScale)
+            let size = CGSize(width: bounds.width / target, height: bounds.height / target)
+            zoom(to: CGRect(x: point.x - size.width / 2, y: point.y - size.height / 2,
+                            width: size.width, height: size.height), animated: true)
         }
     }
 }
