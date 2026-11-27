@@ -118,6 +118,7 @@ struct SettingsView: View {
                     if isRestoring { ProgressView() }
                 }
             }
+            .tint(.primary)
             .disabled(isRestoring)
         } footer: {
             if let restoreNote {
@@ -194,6 +195,7 @@ struct SettingsView: View {
                             SettingsIcon(symbol: "exclamationmark.triangle.fill", color: Theme.amber)
                         }
                     }
+                    .tint(.primary)
                 }
             }
         } header: {
@@ -302,6 +304,7 @@ struct SettingsView: View {
                 }
             }
         }
+        .tint(.primary)
         .disabled(purchases.isEmpty || exporting != nil)
     }
 
@@ -327,6 +330,7 @@ struct SettingsView: View {
                     SettingsIcon(symbol: "star.fill", color: Theme.amber)
                 }
             }
+            .tint(.primary)
 
             ShareLink(item: AppInfo.appStoreURL,
                       message: Text(L("Hlídá mi záruky a účtenky, zkus to taky.", "It keeps track of my warranties and receipts, give it a try."))) {
@@ -336,6 +340,7 @@ struct SettingsView: View {
                     SettingsIcon(symbol: "heart.fill", color: .pink)
                 }
             }
+            .tint(.primary)
 
             if let mail = supportMailURL {
                 Button { openURL(mail) } label: {
@@ -345,6 +350,7 @@ struct SettingsView: View {
                         SettingsIcon(symbol: "envelope.fill", color: .teal)
                     }
                 }
+                .tint(.primary)
             }
         } header: {
             Text(L("O appce", "About"))
