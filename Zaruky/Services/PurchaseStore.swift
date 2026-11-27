@@ -39,7 +39,7 @@ final class PurchaseStore {
         do {
             product = try await Product.products(for: [Self.productID]).first
         } catch {
-            errorMessage = "Nepodařilo se načíst nabídku."
+            errorMessage = L("Nepodařilo se načíst nabídku.", "Couldn't load the offer.")
         }
     }
 
@@ -73,7 +73,7 @@ final class PurchaseStore {
                 break
             }
         } catch {
-            errorMessage = "Nákup se nezdařil. Zkus to prosím znovu."
+            errorMessage = L("Nákup se nezdařil. Zkus to prosím znovu.", "The purchase failed. Please try again.")
         }
     }
 
@@ -81,7 +81,7 @@ final class PurchaseStore {
         do {
             try await AppStore.sync()
         } catch {
-            errorMessage = "Obnovení nákupu se nezdařilo."
+            errorMessage = L("Obnovení nákupu se nezdařilo.", "Couldn't restore the purchase.")
         }
         await refreshEntitlements()
     }
