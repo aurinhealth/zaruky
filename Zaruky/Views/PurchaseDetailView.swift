@@ -116,10 +116,14 @@ struct PurchaseDetailView: View {
                        "Notifications are off in iOS, so the warranty reminder won't arrive."))
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
-                Button(L("Zapnout v Nastavení", "Turn on in Settings")) {
+                Button {
                     if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
                         UIApplication.shared.open(url)
                     }
+                } label: {
+                    Text(L("Zapnout v Nastavení", "Turn on in Settings"))
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
                 }
                 .font(.subheadline.weight(.semibold))
             }
@@ -422,11 +426,14 @@ struct PurchaseDetailView: View {
                  "Until \(end). We'll remind you \(AppFormat.days(NotificationService.daysBefore)) before.")
     }
 
+    /// Whole years only when the months divide evenly, so 26 months never reads as "2 years".
+    private func showsYears(_ months: Int) -> Bool { months >= 24 && months % 12 == 0 }
+
     private func ringValue(_ days: Int) -> String {
         if days < 0 { return "0" }
         if days <= 60 { return "\(days)" }
-        let months = days / 30
-        return months < 24 ? "\(months)" : "\(months / 12)"
+        let months = Int((Double(days) / 30.44).rounded())
+        return showsYears(months) ? "\(months / 12)" : "\(months)"
     }
 
     private func ringUnit(_ days: Int) -> String {
@@ -435,8 +442,8 @@ struct PurchaseDetailView: View {
             return L10n.isEnglish ? (days == 1 ? "day" : "days")
                 : AppFormat.czechPlural(days, one: "den", few: "dny", many: "dní")
         }
-        let months = days / 30
-        if months < 24 {
+        let months = Int((Double(days) / 30.44).rounded())
+        if !showsYears(months) {
             return L10n.isEnglish ? "months" : AppFormat.czechPlural(months, one: "měsíc", few: "měsíce", many: "měsíců")
         }
         let years = months / 12

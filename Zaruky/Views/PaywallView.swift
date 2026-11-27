@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct PaywallView: View {
     @Environment(PurchaseStore.self) private var store
@@ -41,7 +42,8 @@ struct PaywallView: View {
                     .card()
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                // Room for the purchase bar, so the last benefit is never under it.
+                .padding(.bottom, 200)
             }
             .background(Color(.systemGroupedBackground))
             .safeAreaBar(edge: .bottom) { purchaseBar }
@@ -56,6 +58,12 @@ struct PaywallView: View {
             }
             .sheet(isPresented: $showPrivacy) { PrivacyView() }
         }
+    }
+
+    /// "129 Kč" rather than StoreKit's "129,00 Kč" for whole amounts.
+    private static func price(of product: Product) -> String {
+        let value = NSDecimalNumber(decimal: product.price).doubleValue
+        return AppFormat.price(value, currency: product.priceFormatStyle.currencyCode)
     }
 
     private var subtitle: String {
@@ -142,7 +150,7 @@ struct PaywallView: View {
                         if store.isPurchasing || store.isLoading {
                             ProgressView()
                         } else if let product = store.product {
-                            Text(L("Odemknout navždy za ", "Unlock forever for ") + product.displayPrice)
+                            Text(L("Odemknout navždy za ", "Unlock forever for ") + Self.price(of: product))
                         } else if DemoMode.isOn {
                             Text(L("Odemknout navždy za 129 Kč", "Unlock forever for CZK 129"))
                         } else {

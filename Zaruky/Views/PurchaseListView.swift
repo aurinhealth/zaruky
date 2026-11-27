@@ -258,7 +258,8 @@ struct PurchaseListView: View {
                     .padding(.top, 8)
             }
             .padding(.horizontal, Theme.pagePadding)
-            .padding(.bottom, 24)
+            // Keeps the last card clear of the search and scan bar.
+            .padding(.bottom, 96)
             .animation(.snappy, value: filter)
             .animation(.snappy, value: showExpired)
         }
