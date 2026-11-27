@@ -65,8 +65,8 @@ enum AppInfo {
     static let appStoreURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)")!
     static let reviewURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")!
 
-    /// Address for "Napsat nám". Left empty, the row is hidden.
-    static let supportEmail = ""
+    /// Address for "Napsat nám" (contact). Left empty, the row is hidden.
+    static let supportEmail = "petr.bouma@aurin.health"
 
     static var version: String {
         let info = Bundle.main.infoDictionary
