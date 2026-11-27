@@ -4,7 +4,7 @@ import UIKit
 
 /// Launch arguments used by CI to take App Store style screenshots in the simulator:
 /// `-demo` opens an in-memory store with sample receipts (nothing touches iCloud or
-/// notifications), `-demoScreen detail|paywall|form|folder|settings|viewer|empty` opens that screen.
+/// notifications), `-demoScreen detail|paywall|form|scan|folder|settings|viewer|empty` opens that screen.
 enum DemoMode {
     static let isOn = ProcessInfo.processInfo.arguments.contains("-demo")
 
@@ -168,6 +168,46 @@ enum DemoMode {
               "Apple Mac mini M4 10/10C 16/256GB       1 pc       $599.00",
               "Total                                              $599.00",
               "Warranty 24 months"])
+        }
+    }
+
+    /// What the receipt in `sampleReceipt` reads as, for the `scan` screenshot.
+    static var scanDraft: ReceiptDraft {
+        let demo = DemoData.current
+        var draft = ReceiptDraft(usedAI: true)
+        draft.productName = "Apple Watch Series 10"
+        draft.storeName = demo.stores[0]
+        draft.purchaseDate = Calendar.current.date(byAdding: .day, value: -1, to: Date())
+        draft.price = demo.rate == 1 ? 10_990 : (10_990 / demo.rate).rounded() - 0.01
+        draft.warrantyMonths = 24
+        return draft
+    }
+
+    /// A shop receipt photo for the `scan` screenshot.
+    static var sampleReceipt: UIImage {
+        let demo = DemoData.current
+        let price = AppFormat.price(scanDraft.price, currency: demo.currency)
+        let date = AppFormat.date(scanDraft.purchaseDate ?? Date())
+        let size = CGSize(width: 1200, height: 700)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            UIColor(red: 0.86, green: 0.84, blue: 0.80, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            let paper = CGRect(x: 330, y: 40, width: 540, height: 760)
+            UIColor(white: 0.99, alpha: 1).setFill()
+            ctx.cgContext.setShadow(offset: CGSize(width: 0, height: 8), blur: 24, color: UIColor.black.withAlphaComponent(0.25).cgColor)
+            ctx.fill(paper)
+            ctx.cgContext.setShadow(offset: .zero, blur: 0)
+            let mono = UIFont.monospacedSystemFont(ofSize: 26, weight: .regular)
+            let bold = UIFont.monospacedSystemFont(ofSize: 34, weight: .bold)
+            let ink: [NSAttributedString.Key: Any] = [.font: mono, .foregroundColor: UIColor(white: 0.15, alpha: 1)]
+            NSAttributedString(string: demo.stores[0].uppercased(), attributes: [.font: bold, .foregroundColor: UIColor.black])
+                .draw(at: CGPoint(x: 370, y: 80))
+            let lines = [date, "", "Apple Watch Series 10", "S/N  H4KXP2Q9LM", "", String(repeating: "-", count: 30), "\(price)", "", "24 M"]
+            for (i, line) in lines.enumerated() {
+                NSAttributedString(string: line, attributes: ink).draw(at: CGPoint(x: 370, y: 150 + CGFloat(i) * 40))
+            }
         }
     }
 }

@@ -222,9 +222,9 @@ struct PurchaseListView: View {
 
                 if filter == .all && !isSearching && !purchases.isEmpty {
                     SummaryCard(purchases: purchases)
-                        .padding(.bottom, store.isUnlocked ? 8 : 0)
+                        .padding(.bottom, showsFreeLimit ? 0 : 8)
                     // Up top, so it isn't hidden under the bottom bar when the list is short.
-                    if !store.isUnlocked {
+                    if showsFreeLimit {
                         FreeLimitCard(used: purchases.count) { showPaywall = true }
                             .padding(.bottom, 8)
                     }
@@ -476,6 +476,7 @@ struct PurchaseListView: View {
         case "settings": showSettings = true
         case "viewer": showDemoViewer = true
         case "form": formContext = FormContext(image: nil)
+        case "scan": formContext = FormContext(image: DemoMode.sampleReceipt)
         case "folder": filter = folders.first.map { .folder($0.id) } ?? .all
         default: break
         }
@@ -812,6 +813,9 @@ struct FolderBar: View {
 
 /// Tells the user whether receipts are backed up to iCloud.
 struct SyncStatusFooter: View {
+    /// Store screenshots leave out the free-limit card; the paywall screenshot shows the offer.
+    private var showsFreeLimit: Bool { !store.isUnlocked && !DemoMode.isOn }
+
     private var iCloudAvailable: Bool { FileManager.default.ubiquityIdentityToken != nil || DemoMode.isOn }
 
     var body: some View {

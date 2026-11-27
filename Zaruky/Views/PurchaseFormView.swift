@@ -216,7 +216,8 @@ struct PurchaseFormView: View {
             readNote = L("Text se nepodařilo přečíst, vyplň údaje ručně.", "Couldn't read the text, please fill in the details.", "Der Text war nicht lesbar, bitte trag die Angaben selbst ein.")
             return
         }
-        let draft = await ReceiptParser.parse(text)
+        // The `scan` store screenshot shows what on-device AI fills in, which the simulator can't run.
+        let draft = DemoMode.screen == "scan" ? DemoMode.scanDraft : await ReceiptParser.parse(text)
         if productName.isEmpty { productName = draft.productName }
         if storeName.isEmpty { storeName = draft.storeName }
         if let date = draft.purchaseDate { purchaseDate = date }

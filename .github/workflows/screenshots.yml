@@ -80,7 +80,7 @@ jobs:
             esac
           }
           for lang in cs en de sk pl fr es it pt nl; do
-            for screen in list detail folder form paywall settings viewer empty; do
+            for screen in list detail scan folder form paywall settings viewer empty; do
               xcrun simctl terminate "$UDID" cz.zaruky.app 2>/dev/null || true
               xcrun simctl launch "$UDID" cz.zaruky.app -demo -demoScreen "$screen" \
                 -AppleLanguages "($lang)" -AppleLocale "$(locale_for $lang)"
