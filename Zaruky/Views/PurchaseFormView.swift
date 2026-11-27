@@ -70,13 +70,12 @@ struct PurchaseFormView: View {
                     HStack {
                         TextField(L("Cena", "Price"), text: $priceText)
                             .keyboardType(.decimalPad)
-                        Picker(L("Měna", "Currency"), selection: $currencyCode) {
-                            ForEach(currencyOptions, id: \.self) { code in
-                                Text(AppSettings.symbol(for: code)).tag(code)
-                            }
-                        }
-                        .labelsHidden()
-                        .fixedSize()
+                        Text(AppSettings.symbol(for: currencyCode)).foregroundStyle(.secondary)
+                    }
+                    NavigationLink {
+                        CurrencyPicker(selection: $currencyCode)
+                    } label: {
+                        LabeledContent(L("Měna", "Currency"), value: AppSettings.name(for: currencyCode))
                     }
                 }
 
@@ -143,13 +142,6 @@ struct PurchaseFormView: View {
         guard AppSettings.remindersOn else { return legal }
         let days = AppFormat.days(AppSettings.reminderDays)
         return legal + " " + L("Připomenu se \(days) před koncem.", "I'll remind you \(days) before it ends.")
-    }
-
-    private var currencyOptions: [String] {
-        // The common ones, plus the default and this receipt's currency if they are something else.
-        var options = AppSettings.commonCurrencies
-        for code in [AppSettings.currency, currencyCode] where !options.contains(code) { options.append(code) }
-        return options
     }
 
     private var pickerOptions: [Int] {
