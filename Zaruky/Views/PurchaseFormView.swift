@@ -148,11 +148,18 @@ struct PurchaseFormView: View {
                     TextField(L("Příslušenství, kde je krabice…", "Accessories, where the box is…", "Zubehör, wo der Karton ist…"), text: $notes, axis: .vertical)
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(purchase == nil ? L("Nová účtenka", "New receipt", "Neuer Beleg") : L("Upravit", "Edit", "Bearbeiten"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(L("Zrušit", "Cancel", "Abbrechen")) { dismiss() }
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(L("Hotovo", "Done", "Fertig")) {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L("Uložit", "Save", "Sichern")) { save() }
