@@ -24,6 +24,7 @@ struct PurchaseListView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var formContext: FormContext?
     @State private var showPaywall = false
+    @State private var showSettings = false
     @State private var showExpired = true
 
     // Folder editing
@@ -79,6 +80,12 @@ struct PurchaseListView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle(title)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showSettings = true } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel(L("Nastavení", "Settings"))
+                }
                 ToolbarItem(placement: .primaryAction) { addMenu }
             }
             .navigationDestination(for: Purchase.self) { PurchaseDetailView(purchase: $0) }
@@ -106,6 +113,9 @@ struct PurchaseListView: View {
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(usedCount: purchases.count)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
         .alert(editingFolder == nil ? L("Nová složka", "New folder") : L("Přejmenovat složku", "Rename folder"),
                isPresented: $showFolderEditor) {
@@ -340,6 +350,7 @@ struct PurchaseListView: View {
                 path = [first]
             }
         case "paywall": showPaywall = true
+        case "settings": showSettings = true
         case "form": formContext = FormContext(image: nil)
         case "folder": filter = folders.first.map { .folder($0.id) } ?? .all
         default: break
@@ -415,7 +426,11 @@ struct SummaryCard: View {
 
     private var active: [Purchase] { purchases.filter { $0.status != .expired } }
     private var soon: [Purchase] { purchases.filter { $0.status == .expiringSoon } }
-    private var protectedValue: Double { active.compactMap(\.price).reduce(0, +) }
+    @AppStorage(AppSettings.Key.currency) private var currency = AppSettings.defaultCurrency
+    /// Sums only receipts in the default currency, so different currencies are never added together.
+    private var protectedValue: Double {
+        active.filter { $0.currencyCode == currency }.compactMap(\.price).reduce(0, +)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -423,7 +438,7 @@ struct SummaryCard: View {
                 Text(L("Pod zárukou máš", "Under warranty"))
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.white.opacity(0.85))
-                Text(AppFormat.price(protectedValue))
+                Text(AppFormat.price(protectedValue, currency: currency))
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
@@ -721,7 +736,8 @@ struct WelcomeView: View {
                                  "On-device AI reads the product, store, date and price."))
                     Divider().padding(.leading, 64)
                     step(3, symbol: "bell.badge.fill", title: L("Připomeneme se včas", "We remind you in time"),
-                         text: L("30 dní předem víš, že záruka končí.", "You hear from us 30 days before it ends."))
+                         text: L("\(AppFormat.days(AppSettings.reminderDays)) předem víš, že záruka končí.",
+                                 "You hear from us \(AppFormat.days(AppSettings.reminderDays)) before it ends."))
                 }
                 .card()
 

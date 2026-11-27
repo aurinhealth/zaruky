@@ -7,7 +7,8 @@ struct ReceiptDraft {
     var productName: String = ""
     var purchaseDate: Date?
     var price: Double?
-    var warrantyMonths: Int = 24
+    /// nil when the receipt doesn't say; the form then uses the default from Settings.
+    var warrantyMonths: Int?
     var usedAI: Bool = false
 }
 
@@ -41,7 +42,12 @@ enum ReceiptParser {
                 draft.productName = ai.productName
                 draft.purchaseDate = isoDate(ai.purchaseDate) ?? fallback.purchaseDate
                 draft.price = ai.totalPrice > 0 ? ai.totalPrice : fallback.price
-                draft.warrantyMonths = (1...240).contains(ai.warrantyMonths) ? ai.warrantyMonths : 24
+                // The model answers 24 when the receipt says nothing, so 24 only counts if the rules saw it too.
+                if (1...240).contains(ai.warrantyMonths) && ai.warrantyMonths != 24 {
+                    draft.warrantyMonths = ai.warrantyMonths
+                } else {
+                    draft.warrantyMonths = fallback.warrantyMonths
+                }
                 return draft
             }
         }
@@ -70,7 +76,7 @@ enum ReceiptParser {
         draft.storeName = lines.first ?? ""
         draft.purchaseDate = firstDate(in: text)
         draft.price = totalPrice(in: lines)
-        if let months = warrantyMonths(in: text) { draft.warrantyMonths = months }
+        draft.warrantyMonths = warrantyMonths(in: text)
         return draft
     }
 

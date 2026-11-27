@@ -74,7 +74,7 @@ jobs:
             --cellularMode active --cellularBars 4 --wifiBars 3
           mkdir -p shots
           for lang in cs en; do
-            for screen in list detail folder form paywall empty; do
+            for screen in list detail folder form paywall settings empty; do
               xcrun simctl terminate "$UDID" cz.zaruky.app 2>/dev/null || true
               xcrun simctl launch "$UDID" cz.zaruky.app -demo -demoScreen "$screen" \
                 -AppleLanguages "($lang)" -AppleLocale "$([ $lang = en ] && echo en_GB || echo cs_CZ)"

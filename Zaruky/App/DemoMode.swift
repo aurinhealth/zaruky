@@ -3,7 +3,7 @@ import SwiftData
 
 /// Launch arguments used by CI to take App Store style screenshots in the simulator:
 /// `-demo` opens an in-memory store with sample receipts (nothing touches iCloud or
-/// notifications), `-demoScreen detail|paywall|form|folder|empty` opens that screen.
+/// notifications), `-demoScreen detail|paywall|form|folder|settings|empty` opens that screen.
 enum DemoMode {
     static let isOn = ProcessInfo.processInfo.arguments.contains("-demo")
 

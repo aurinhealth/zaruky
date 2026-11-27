@@ -27,7 +27,8 @@ struct PaywallView: View {
                                 L("Elektronika, spotřebiče, nábytek, kolo…", "Electronics, appliances, furniture, bikes…"))
                         Divider().padding(.leading, 66)
                         benefit("bell.badge.fill", .orange, L("Připomínky před koncem záruky", "Reminders before warranties end"),
-                                L("U každé účtenky, 30 dní předem.", "For every receipt, 30 days ahead."))
+                                L("U každé účtenky, \(AppFormat.days(AppSettings.reminderDays)) předem.",
+                                  "For every receipt, \(AppFormat.days(AppSettings.reminderDays)) ahead."))
                         Divider().padding(.leading, 66)
                         benefit("lock.icloud.fill", .blue, L("Jen ve tvém iCloudu", "Only in your iCloud"),
                                 L("Žádný účet, žádné servery třetích stran.", "No account, no third-party servers."))
