@@ -144,7 +144,7 @@ struct PaywallView: View {
                         } else if let product = store.product {
                             Text(L("Odemknout navždy za ", "Unlock forever for ") + product.displayPrice)
                         } else if DemoMode.isOn {
-                            Text(L("Odemknout navždy za 199 Kč", "Unlock forever for CZK 199"))
+                            Text(L("Odemknout navždy za 129 Kč", "Unlock forever for CZK 129"))
                         } else {
                             Label(L("Zkusit znovu", "Try again"), systemImage: "arrow.clockwise")
                         }
