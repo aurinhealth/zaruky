@@ -7,6 +7,8 @@ import VisionKit
 struct FormContext: Identifiable {
     let id = UUID()
     var image: UIImage?
+    /// Text taken straight from a PDF, used instead of OCR.
+    var text: String? = nil
 }
 
 struct PurchaseListView: View {
@@ -21,6 +23,10 @@ struct PurchaseListView: View {
     @State private var filter: FolderFilter = .all
     @State private var showScanner = false
     @State private var showPhotoPicker = false
+    @State private var showFileImporter = false
+    /// Receipts picked from Files that are waiting for their form, one after another.
+    @State private var importQueue: [FormContext] = []
+    @State private var importNote: String?
     @State private var photoItem: PhotosPickerItem?
     @State private var formContext: FormContext?
     @State private var showPaywall = false
@@ -72,6 +78,7 @@ struct PurchaseListView: View {
                 if purchases.isEmpty && folders.isEmpty {
                     WelcomeView(onScan: { start(.scan) },
                                 onPhoto: { start(.photo) },
+                                onFiles: { start(.files) },
                                 onManual: { start(.manual) })
                 } else {
                     content
@@ -108,8 +115,28 @@ struct PurchaseListView: View {
                 photoItem = nil
             }
         }
-        .sheet(item: $formContext) { context in
-            PurchaseFormView(purchase: nil, image: context.image, initialFolder: selectedFolder)
+        .fileImporter(isPresented: $showFileImporter,
+                      allowedContentTypes: FileImport.contentTypes,
+                      allowsMultipleSelection: true) { result in
+            if case .success(let urls) = result { importFiles(urls) }
+        }
+        .onOpenURL { url in
+            // "Open in Záruky" / "Copy to Záruky" from the share sheet in Files, Mail, Safari…
+            guard url.isFileURL else { return }
+            guard store.canAdd(currentCount: purchases.count) else { showPaywall = true; return }
+            importFiles([url])
+        }
+        .sheet(item: $formContext, onDismiss: showNextImport) { context in
+            PurchaseFormView(purchase: nil, image: context.image, initialFolder: selectedFolder,
+                             prefilledText: context.text,
+                             queueNote: importQueue.isEmpty ? nil
+                                : L("Další účtenky čekají: \(importQueue.count)", "More receipts waiting: \(importQueue.count)"))
+        }
+        .alert(L("Import ze Souborů", "Import from Files"),
+               isPresented: Binding(get: { importNote != nil }, set: { if !$0 { importNote = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importNote ?? "")
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(usedCount: purchases.count)
@@ -313,6 +340,7 @@ struct PurchaseListView: View {
         Menu {
             Button { start(.scan) } label: { Label(L("Naskenovat", "Scan"), systemImage: "doc.viewfinder") }
             Button { start(.photo) } label: { Label(L("Vybrat z Fotek", "Choose from Photos"), systemImage: "photo") }
+            Button { start(.files) } label: { Label(L("Nahrát ze Souborů", "Import from Files"), systemImage: "folder") }
             Button { start(.manual) } label: { Label(L("Zadat ručně", "Enter manually"), systemImage: "square.and.pencil") }
             Divider()
             Button { startNewFolder() } label: { Label(L("Nová složka", "New folder"), systemImage: "folder.badge.plus") }
@@ -322,7 +350,7 @@ struct PurchaseListView: View {
         .accessibilityLabel(L("Přidat", "Add"))
     }
 
-    private enum AddSource { case scan, photo, manual }
+    private enum AddSource { case scan, photo, files, manual }
 
     private func start(_ source: AddSource) {
         guard store.canAdd(currentCount: purchases.count) else {
@@ -338,8 +366,49 @@ struct PurchaseListView: View {
             }
         case .photo:
             showPhotoPicker = true
+        case .files:
+            showFileImporter = true
         case .manual:
             formContext = FormContext(image: nil)
+        }
+    }
+
+    // MARK: Files
+
+    /// Reads the picked files and opens the form for each, one after another.
+    /// Respects the free limit: only as many as still fit are imported.
+    private func importFiles(_ urls: [URL]) {
+        let loaded = urls.compactMap(FileImport.load)
+        let failed = urls.count - loaded.count
+        let room = store.isUnlocked ? loaded.count : max(PurchaseStore.freeLimit - purchases.count, 0)
+        let accepted = Array(loaded.prefix(room))
+        let overLimit = loaded.count - accepted.count
+
+        var notes: [String] = []
+        if failed > 0 {
+            notes.append(L("\(AppFormat.receipts(failed)) se nepodařilo otevřít.", "Couldn't open \(AppFormat.receipts(failed))."))
+        }
+        if overLimit > 0 {
+            notes.append(L("\(AppFormat.receipts(overLimit)) se nevešlo do verze zdarma.",
+                           "\(AppFormat.receipts(overLimit)) didn't fit in the free version."))
+        }
+
+        guard !accepted.isEmpty else {
+            if overLimit > 0 { showPaywall = true } else if !notes.isEmpty { importNote = notes.joined(separator: " ") }
+            return
+        }
+        if !notes.isEmpty { importNote = notes.joined(separator: " ") }
+        importQueue = accepted.dropFirst().map { FormContext(image: $0.image, text: $0.text) }
+        formContext = FormContext(image: accepted[0].image, text: accepted[0].text)
+    }
+
+    private func showNextImport() {
+        guard !importQueue.isEmpty else { return }
+        let next = importQueue.removeFirst()
+        Task { @MainActor in
+            // Let the previous sheet finish closing before the next one opens.
+            try? await Task.sleep(for: .milliseconds(450))
+            formContext = next
         }
     }
 
@@ -707,6 +776,7 @@ struct SyncStatusFooter: View {
 struct WelcomeView: View {
     var onScan: () -> Void
     var onPhoto: () -> Void
+    var onFiles: () -> Void
     var onManual: () -> Void
 
     var body: some View {
@@ -751,15 +821,10 @@ struct WelcomeView: View {
                     .buttonStyle(.glassProminent)
                     .controlSize(.large)
 
-                    HStack(spacing: 12) {
-                        Button(action: onPhoto) {
-                            Label(L("Z Fotek", "From Photos"), systemImage: "photo")
-                                .frame(maxWidth: .infinity)
-                        }
-                        Button(action: onManual) {
-                            Label(L("Ručně", "Manually"), systemImage: "square.and.pencil")
-                                .frame(maxWidth: .infinity)
-                        }
+                    HStack(spacing: 10) {
+                        sourceButton(L("Z Fotek", "Photos"), symbol: "photo", action: onPhoto)
+                        sourceButton(L("Ze Souborů", "Files"), symbol: "folder", action: onFiles)
+                        sourceButton(L("Ručně", "Manually"), symbol: "square.and.pencil", action: onManual)
                     }
                     .buttonStyle(.glass)
                     .controlSize(.large)
@@ -767,6 +832,20 @@ struct WelcomeView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
+        }
+    }
+
+    private func sourceButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                Text(title)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 2)
         }
     }
 

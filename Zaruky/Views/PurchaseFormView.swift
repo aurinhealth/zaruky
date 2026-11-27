@@ -10,6 +10,10 @@ struct PurchaseFormView: View {
     let image: UIImage?
     /// Folder preselected for a new purchase (the folder the list is showing).
     var initialFolder: Folder? = nil
+    /// Text already taken from a PDF; when present, OCR is skipped.
+    var prefilledText: String? = nil
+    /// Shown when more imported receipts wait after this one.
+    var queueNote: String? = nil
 
     @Query(sort: \Folder.createdAt) private var folderQuery: [Folder]
 
@@ -55,6 +59,11 @@ struct PurchaseFormView: View {
                             .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
                         if let readNote, !isReading {
                             Label(readNote, systemImage: "wand.and.sparkles")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let queueNote {
+                            Label(queueNote, systemImage: "tray.full")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
@@ -170,7 +179,12 @@ struct PurchaseFormView: View {
     private func read(_ image: UIImage) async {
         isReading = true
         defer { isReading = false }
-        let text = (try? await OCRService.recognizeText(in: image)) ?? ""
+        let text: String
+        if let prefilledText, !prefilledText.isEmpty {
+            text = prefilledText
+        } else {
+            text = (try? await OCRService.recognizeText(in: image)) ?? ""
+        }
         guard !text.isEmpty else {
             readNote = L("Text se nepodařilo přečíst, vyplň údaje ručně.", "Couldn't read the text, please fill in the details.")
             return
