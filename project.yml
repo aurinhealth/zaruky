@@ -29,6 +29,13 @@ targets:
         NSCameraUsageDescription: Fotoaparát slouží ke skenování účtenek.
         NSPhotoLibraryUsageDescription: Přístup k Fotkám slouží k výběru fotky účtenky.
         ITSAppUsesNonExemptEncryption: false
+        # Lets Files, Mail and Safari offer "Open in Záruky" for PDFs and pictures.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Receipt
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [com.adobe.pdf, public.image]
+        LSSupportsOpeningDocumentsInPlace: false
     entitlements:
       path: Zaruky/Zaruky.entitlements
       properties:
