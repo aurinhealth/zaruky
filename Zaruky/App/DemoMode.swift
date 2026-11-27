@@ -48,8 +48,34 @@ enum DemoMode {
             let p = Purchase(productName: name, storeName: store, purchaseDate: date,
                              price: price, warrantyMonths: months, folder: folder)
             context.insert(p)
+            if name.hasPrefix("Sony") {
+                p.serialNumber = "S01-5824736-B"
+                let card = Attachment(kind: .warrantyCard, imageData: sampleWarrantyCard.jpegData(compressionQuality: 0.8))
+                context.insert(card)
+                card.purchase = p
+            }
+            if name.hasPrefix("iPhone") { p.serialNumber = "F2LXK9QWN1" }
         }
         try? context.save()
+    }
+
+    /// A small warranty card for the detail screenshot.
+    static var sampleWarrantyCard: UIImage {
+        let size = CGSize(width: 900, height: 620)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            UIColor(white: 0.97, alpha: 1).setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            let big: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 52), .foregroundColor: UIColor.black]
+            let body: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 30), .foregroundColor: UIColor.darkGray]
+            NSAttributedString(string: L10n.isEnglish ? "WARRANTY CARD" : "ZÁRUČNÍ LIST", attributes: big).draw(at: CGPoint(x: 60, y: 60))
+            for (i, line) in ["Sony WH-1000XM6", "S/N: S01-5824736-B", L10n.isEnglish ? "Warranty: 24 months" : "Záruka: 24 měsíců"].enumerated() {
+                NSAttributedString(string: line, attributes: body).draw(at: CGPoint(x: 60, y: 190 + CGFloat(i) * 60))
+            }
+            UIColor.gray.setStroke()
+            ctx.stroke(CGRect(x: 30, y: 30, width: size.width - 60, height: size.height - 60))
+        }
     }
 
     /// A tall A4-like invoice picture for the `viewer` screenshot (same size as an imported PDF page).

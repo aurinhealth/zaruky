@@ -24,6 +24,7 @@ struct PurchaseFormView: View {
     @State private var warrantyMonths = AppSettings.defaultWarrantyMonths
     @State private var currencyCode = AppSettings.currency
     @State private var notes = ""
+    @State private var serialNumber = ""
     @State private var folder: Folder?
     @State private var isReading = false
     @State private var readNote: String?
@@ -86,6 +87,10 @@ struct PurchaseFormView: View {
                     } label: {
                         LabeledContent(L("Měna", "Currency"), value: AppSettings.name(for: currencyCode))
                     }
+                    TextField(L("Sériové číslo / IMEI", "Serial number / IMEI"), text: $serialNumber)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .font(.body.monospaced())
                 }
 
                 Section {
@@ -119,7 +124,7 @@ struct PurchaseFormView: View {
                 }
 
                 Section(L("Poznámka", "Note")) {
-                    TextField(L("Sériové číslo, příslušenství…", "Serial number, accessories…"), text: $notes, axis: .vertical)
+                    TextField(L("Příslušenství, kde je krabice…", "Accessories, where the box is…"), text: $notes, axis: .vertical)
                 }
             }
             .navigationTitle(purchase == nil ? L("Nová účtenka", "New receipt") : L("Upravit", "Edit"))
@@ -174,6 +179,7 @@ struct PurchaseFormView: View {
         warrantyMonths = purchase.warrantyMonths
         currencyCode = purchase.currencyCode
         notes = purchase.notes
+        serialNumber = purchase.serialNumber
     }
 
     private func read(_ image: UIImage) async {
@@ -193,6 +199,7 @@ struct PurchaseFormView: View {
         if productName.isEmpty { productName = draft.productName }
         if storeName.isEmpty { storeName = draft.storeName }
         if let date = draft.purchaseDate { purchaseDate = date }
+        if serialNumber.isEmpty, let serial = draft.serialNumber { serialNumber = serial }
         if priceText.isEmpty, let price = draft.price {
             priceText = String(format: "%.2f", price).replacingOccurrences(of: ".", with: ",")
         }
@@ -208,6 +215,11 @@ struct PurchaseFormView: View {
         readNote = draft.usedAI
             ? L("Vyplněno pomocí AI v telefonu. Zkontroluj prosím údaje.", "Filled in by on-device AI. Please check the details.")
             : L("Vyplněno automaticky. Zkontroluj prosím údaje.", "Filled in automatically. Please check the details.")
+        if draft.extendedWarranty, let months = draft.warrantyMonths {
+            let length = AppFormat.warrantyLength(months: months)
+            readNote = (readNote ?? "") + " " + L("Na účtence je prodloužená záruka, nastavil jsem \(length).",
+                                                  "The receipt shows an extended warranty, so it's set to \(length).")
+        }
         if let suggestedFolder {
             readNote = (readNote ?? "") + " " + L("Složku „\(suggestedFolder)“ jsem navrhl podle produktu.",
                                                   "Suggested the “\(suggestedFolder)” folder from the product.")
@@ -219,6 +231,10 @@ struct PurchaseFormView: View {
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: ",", with: ".")
         return Double(cleaned)
+    }
+
+    private var cleanSerial: String {
+        serialNumber.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func save() {
@@ -233,6 +249,7 @@ struct PurchaseFormView: View {
             target.warrantyMonths = warrantyMonths
             target.currencyCode = currencyCode
             target.notes = notes
+            target.serialNumber = cleanSerial
             target.folder = folder
         } else {
             target = Purchase(
@@ -246,6 +263,7 @@ struct PurchaseFormView: View {
                 folder: folder
             )
             target.currencyCode = currencyCode
+            target.serialNumber = cleanSerial
             modelContext.insert(target)
         }
         try? modelContext.save()

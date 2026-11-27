@@ -63,6 +63,7 @@ jobs:
           xcodegen generate
           # Build number = run number, written literally so every upload is unique.
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Zaruky/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ZarukyWidgets/Info.plist
 
       - name: Write API key
         if: steps.check.outputs.ready == 'true'
@@ -100,6 +101,17 @@ jobs:
           codesign -d --entitlements - "$APP"
           codesign -d --entitlements - "$APP" 2>&1 | grep -q "iCloud.cz.zaruky.app" \
             || { echo "::error::iCloud entitlements missing from the archive"; exit 1; }
+          for bundle in "$APP" "$APP/PlugIns/ZarukyWidgets.appex"; do
+            codesign -d --entitlements - "$bundle" 2>&1 | grep -q "group.cz.zaruky.app" \
+              || { echo "::error::App Group missing from $bundle"; exit 1; }
+          done
+
+      # The widget shares data with the app through an App Group. The export below
+      # registers the widget's new bundle ID itself, but adds no capability to the
+      # app's ID, which already exists.
+      - name: Turn on App Groups for the app
+        if: steps.check.outputs.ready == 'true'
+        run: python3 .github/scripts/asc_capability.py cz.zaruky.app APP_GROUPS
 
       - name: Sign with cloud signing and upload to TestFlight
         if: steps.check.outputs.ready == 'true'

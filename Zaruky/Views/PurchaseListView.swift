@@ -33,6 +33,8 @@ struct PurchaseListView: View {
     @State private var showSettings = false
     @State private var showDemoViewer = false
     @State private var showExpired = true
+    /// "Remind you before the warranty ends?" after the first saved receipt.
+    @State private var askReminders = false
 
     // Folder editing
     @State private var showFolderEditor = false
@@ -48,6 +50,11 @@ struct PurchaseListView: View {
     private var selectedFolder: Folder? {
         if case .folder(let id) = filter { return folders.first { $0.id == id } }
         return nil
+    }
+
+    /// Changes whenever something the widgets show changes.
+    private var widgetSignature: [String] {
+        purchases.map { "\($0.id)|\($0.productName)|\($0.storeName)|\($0.warrantyEndDate.timeIntervalSince1970)|\($0.price ?? -1)|\($0.currencyCode)" }
     }
 
     private var isSearching: Bool {
@@ -122,12 +129,17 @@ struct PurchaseListView: View {
             if case .success(let urls) = result { importFiles(urls) }
         }
         .onOpenURL { url in
+            // A widget opens a receipt's detail.
+            if let id = WidgetBridge.purchaseID(from: url) {
+                if let purchase = purchases.first(where: { $0.id == id }) { path = [purchase] }
+                return
+            }
             // "Open in Záruky" / "Copy to Záruky" from the share sheet in Files, Mail, Safari…
             guard url.isFileURL else { return }
             guard store.canAdd(currentCount: purchases.count) else { showPaywall = true; return }
             importFiles([url])
         }
-        .sheet(item: $formContext, onDismiss: showNextImport) { context in
+        .sheet(item: $formContext, onDismiss: formClosed) { context in
             PurchaseFormView(purchase: nil, image: context.image, initialFolder: selectedFolder,
                              prefilledText: context.text,
                              queueNote: importQueue.isEmpty ? nil
@@ -138,6 +150,13 @@ struct PurchaseListView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(importNote ?? "")
+        }
+        .alert(L("Připomenout konec záruky?", "Remind you when the warranty ends?"), isPresented: $askReminders) {
+            Button(L("Připomínat", "Remind me")) { allowReminders() }
+            Button(L("Teď ne", "Not now"), role: .cancel) { declineReminders() }
+        } message: {
+            Text(L("Ozvu se \(AppFormat.days(AppSettings.reminderDays)) předtím, než záruka skončí, ať stihneš případnou reklamaci.",
+                   "You'll hear from me \(AppFormat.days(AppSettings.reminderDays)) before a warranty ends, so there's time for a claim."))
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(usedCount: purchases.count)
@@ -177,9 +196,11 @@ struct PurchaseListView: View {
                    "The receipt and its reminder are removed from all your devices."))
         }
         .task(id: purchases.count) { await NotificationService.sync(with: purchases) }
+        .onChange(of: widgetSignature, initial: true) { _, _ in WidgetBridge.update(with: purchases) }
         .task { openDemoScreen() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await NotificationService.sync(with: purchases) } }
+            if phase == .background { WidgetBridge.update(with: purchases) }
         }
         .onChange(of: folders.map(\.id)) { _, ids in
             // The selected folder may have been deleted, here or on another device.
@@ -404,6 +425,36 @@ struct PurchaseListView: View {
         if !notes.isEmpty { importNote = notes.joined(separator: " ") }
         importQueue = accepted.dropFirst().map { FormContext(image: $0.image, text: $0.text) }
         formContext = FormContext(image: accepted[0].image, text: accepted[0].text)
+    }
+
+    private func formClosed() {
+        if importQueue.isEmpty {
+            Task { await offerReminders() }
+        } else {
+            showNextImport()
+        }
+    }
+
+    /// Asks about reminders once the first receipt is saved, instead of at first launch:
+    /// by then it's clear what they're for, and iOS only shows its own prompt once.
+    private func offerReminders() async {
+        guard !DemoMode.isOn, !purchases.isEmpty, AppSettings.remindersOn,
+              await NotificationService.notAskedYet() else { return }
+        try? await Task.sleep(for: .milliseconds(450))
+        askReminders = true
+    }
+
+    private func allowReminders() {
+        Task {
+            await NotificationService.requestAuthorization()
+            await NotificationService.sync(with: purchases)
+        }
+    }
+
+    private func declineReminders() {
+        // Settings then shows reminders off; turning them on there asks iOS again.
+        UserDefaults.standard.set(false, forKey: AppSettings.Key.remindersOn)
+        Task { await NotificationService.sync(with: purchases) }
     }
 
     private func showNextImport() {

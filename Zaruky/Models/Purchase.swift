@@ -27,9 +27,15 @@ final class Purchase {
     var currencyCode: String = "CZK"
     var warrantyMonths: Int = 24
     var notes: String = ""
+    /// Serial number or IMEI; stores and service centres ask for it with a claim.
+    var serialNumber: String = ""
     @Attribute(.externalStorage) var receiptImageData: Data?
     var createdAt: Date = Date()
     var folder: Folder?
+
+    /// Warranty card, product photo… besides the receipt. Deleted with the purchase.
+    @Relationship(deleteRule: .cascade, inverse: \Attachment.purchase)
+    var attachments: [Attachment]? = []
 
     init(
         productName: String,
@@ -51,6 +57,11 @@ final class Purchase {
         self.receiptImageData = receiptImageData
         self.createdAt = Date()
         self.folder = folder
+    }
+
+    /// Extra pictures, oldest first.
+    var sortedAttachments: [Attachment] {
+        (attachments ?? []).sorted { $0.createdAt < $1.createdAt }
     }
 
     var warrantyEndDate: Date {

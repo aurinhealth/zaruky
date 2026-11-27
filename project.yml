@@ -17,6 +17,8 @@ targets:
     platform: iOS
     sources:
       - path: Zaruky
+    dependencies:
+      - target: ZarukyWidgets
     info:
       path: Zaruky/Info.plist
       properties:
@@ -36,18 +38,54 @@ targets:
             LSHandlerRank: Alternate
             LSItemContentTypes: [com.adobe.pdf, public.image]
         LSSupportsOpeningDocumentsInPlace: false
+        # zaruky://purchase/<id>: a widget opens that receipt.
+        CFBundleURLTypes:
+          - CFBundleURLName: cz.zaruky.app
+            CFBundleURLSchemes: [zaruky]
     entitlements:
       path: Zaruky/Zaruky.entitlements
       properties:
         com.apple.developer.icloud-container-identifiers: [iCloud.cz.zaruky.app]
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
+        # The widgets read their copy of the receipts from here (WidgetSnapshot).
+        com.apple.security.application-groups: [group.cz.zaruky.app]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cz.zaruky.app
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+  # Home-screen and lock-screen widget "Ending soon" (WidgetKit), embedded in the app.
+  ZarukyWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ZarukyWidgets
+      - path: Zaruky/Shared
+      - path: Zaruky/Models/L10n.swift
+      - path: Zaruky/Models/AppFormat.swift
+    entitlements:
+      path: ZarukyWidgets/ZarukyWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.cz.zaruky.app]
+    info:
+      path: ZarukyWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Záruky
+        CFBundleDevelopmentRegion: cs
+        CFBundleLocalizations: [cs, en]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.zaruky.app.widgets
+        PRODUCT_NAME: ZarukyWidgets
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
         CODE_SIGN_STYLE: Automatic
 schemes:
   Zaruky:

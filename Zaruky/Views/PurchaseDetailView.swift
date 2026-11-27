@@ -27,6 +27,7 @@ struct PurchaseDetailView: View {
                 infoCard
                 if !purchase.notes.isEmpty { notesCard }
                 receiptCard
+                AttachmentsCard(purchase: purchase)
                 claimTip
             }
             .padding(.horizontal, Theme.pagePadding)
@@ -127,6 +128,10 @@ struct PurchaseDetailView: View {
             infoRow(L("Délka záruky", "Warranty length"), AppFormat.warrantyLength(months: purchase.warrantyMonths), symbol: "shield.lefthalf.filled")
             Divider().padding(.leading, 52)
             infoRow(L("Cena", "Price"), AppFormat.price(purchase.price, currency: purchase.currencyCode), symbol: "creditcard")
+            if !purchase.serialNumber.isEmpty {
+                Divider().padding(.leading, 52)
+                serialRow
+            }
         }
         .card()
     }
@@ -147,6 +152,51 @@ struct PurchaseDetailView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 13)
         .accessibilityElement(children: .combine)
+    }
+
+    private var serialRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "barcode")
+                .font(.body)
+                .foregroundStyle(Theme.brand)
+                .frame(width: 28)
+            Text(L("Sériové číslo", "Serial number"))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(purchase.serialNumber)
+                .font(.body.monospaced())
+                .fontWeight(.medium)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .textSelection(.enabled)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+        .contextMenu {
+            Button {
+                UIPasteboard.general.string = purchase.serialNumber
+            } label: {
+                Label(L("Kopírovat", "Copy"), systemImage: "doc.on.doc")
+            }
+        }
+    }
+
+    /// Receipt first, then the warranty card and other pictures, for the claim share sheet.
+    private var claimImages: [Image] {
+        let extra = purchase.sortedAttachments.compactMap { $0.imageData.flatMap(UIImage.init(data:)) }
+        return ([receiptImage].compactMap { $0 } + extra).map { Image(uiImage: $0) }
+    }
+
+    /// Text that goes with the pictures, so the store has the details in one message.
+    private var claimMessage: String {
+        var parts = [purchase.productName]
+        let bought = AppFormat.date(purchase.purchaseDate)
+        parts.append(purchase.storeName.isEmpty ? L("koupeno \(bought)", "bought on \(bought)")
+                                                : L("koupeno \(bought) v \(purchase.storeName)", "bought on \(bought) at \(purchase.storeName)"))
+        if !purchase.serialNumber.isEmpty {
+            parts.append(L("sériové číslo \(purchase.serialNumber)", "serial number \(purchase.serialNumber)"))
+        }
+        return parts.filter { !$0.isEmpty }.joined(separator: ", ") + "."
     }
 
     private var notesCard: some View {
@@ -188,8 +238,10 @@ struct PurchaseDetailView: View {
                 .accessibilityLabel(L("Zobrazit účtenku", "View receipt"))
 
                 ShareLink(
-                    item: Image(uiImage: receiptImage),
-                    preview: SharePreview(L("Účtenka – ", "Receipt – ") + purchase.productName, image: Image(uiImage: receiptImage))
+                    items: claimImages,
+                    subject: Text(L("Reklamace – ", "Claim – ") + purchase.productName),
+                    message: Text(claimMessage),
+                    preview: { image in SharePreview(L("Účtenka – ", "Receipt – ") + purchase.productName, image: image) }
                 ) {
                     Label(L("Poslat účtenku k reklamaci", "Send receipt for a claim"), systemImage: "square.and.arrow.up")
                         .font(.headline)
