@@ -232,12 +232,16 @@ struct PurchaseListView: View {
 
     private var scanButton: some View {
         Button { start(.scan) } label: {
-            Label(L("Naskenovat účtenku", "Scan a receipt"), systemImage: "doc.viewfinder")
-                .font(.headline)
-                .labelStyle(.titleAndIcon)
-                .padding(.horizontal, 6)
+            HStack(spacing: 8) {
+                Image(systemName: "doc.viewfinder")
+                Text(L("Naskenovat účtenku", "Scan a receipt"))
+            }
+            .font(.headline)
+            .padding(.horizontal, 8)
         }
         .buttonStyle(.glassProminent)
+        .tint(Theme.brand)
+        .accessibilityLabel(L("Naskenovat účtenku", "Scan a receipt"))
     }
 
     @ViewBuilder
