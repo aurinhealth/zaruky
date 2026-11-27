@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   testflight:
-    runs-on: macos-27
+    runs-on: macos-26
     timeout-minutes: 45
     env:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v4
         if: steps.check.outputs.ready == 'true'
 
-      # App Store Connect requires the iOS 27 SDK (ITMS-90725), so build with Xcode 27.
+      # App Store Connect requires the iOS 27 SDK from April 2027 (ITMS-90725): use Xcode 27 as soon as the image has it.
       - name: Select Xcode 27
         if: steps.check.outputs.ready == 'true'
         run: |
@@ -48,8 +48,9 @@ jobs:
           XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1)
           [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
           if [ -z "$XCODE" ]; then
-            echo "::error::Xcode 27 is not installed on this runner image"
-            exit 1
+            # Not on the GitHub image yet: fall back to the newest Xcode 26 until it lands.
+            echo "::warning::Xcode 27 is not on this runner image yet, building with Xcode 26"
+            XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
           fi
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
