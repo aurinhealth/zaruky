@@ -3,6 +3,8 @@ import SwiftUI
 struct PaywallView: View {
     @Environment(PurchaseStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @State private var showPrivacy = false
     /// How many receipts the user already has, to say why they're seeing this.
     var usedCount: Int = 0
 
@@ -52,6 +54,7 @@ struct PaywallView: View {
             .task {
                 if store.product == nil { await store.loadProduct() }
             }
+            .sheet(isPresented: $showPrivacy) { PrivacyView() }
         }
     }
 
@@ -118,21 +121,32 @@ struct PaywallView: View {
                 .buttonStyle(.glassProminent)
                 .controlSize(.large)
             } else {
+                if store.loadFailed && !DemoMode.isOn {
+                    Text(L("Nabídku se teď nepodařilo načíst z App Storu. Zkontroluj připojení k internetu a zkus to znovu.",
+                           "Couldn't load the offer from the App Store. Check your internet connection and try again."))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
                 Button {
                     Task {
+                        if store.product == nil && !DemoMode.isOn {
+                            await store.loadProduct()
+                            return
+                        }
                         await store.buy()
                         if store.isUnlocked { dismiss() }
                     }
                 } label: {
                     Group {
-                        if store.isPurchasing {
+                        if store.isPurchasing || store.isLoading {
                             ProgressView()
                         } else if let product = store.product {
                             Text(L("Odemknout navždy za ", "Unlock forever for ") + product.displayPrice)
                         } else if DemoMode.isOn {
-                            Text(L("Odemknout navždy za 199 Kč", "Unlock forever for CZK 199"))
+                            Text(L("Odemknout navždy za 129 Kč", "Unlock forever for CZK 129"))
                         } else {
-                            Text(L("Načítám…", "Loading…"))
+                            Label(L("Zkusit znovu", "Try again"), systemImage: "arrow.clockwise")
                         }
                     }
                     .font(.headline)
@@ -141,7 +155,7 @@ struct PaywallView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .controlSize(.large)
-                .disabled((store.product == nil && !DemoMode.isOn) || store.isPurchasing)
+                .disabled(store.isPurchasing || store.isLoading)
 
                 HStack(spacing: 6) {
                     Text(L("Jednorázová platba", "One-time payment"))
@@ -151,6 +165,14 @@ struct PaywallView: View {
                     }
                 }
                 .font(.footnote)
+                .foregroundStyle(.secondary)
+
+                HStack(spacing: 6) {
+                    Button(L("Podmínky", "Terms")) { openURL(AppInfo.termsURL) }
+                    Text("·")
+                    Button(L("Soukromí", "Privacy")) { showPrivacy = true }
+                }
+                .font(.caption)
                 .foregroundStyle(.secondary)
             }
 

@@ -9,6 +9,10 @@ struct ReceiptDraft {
     var price: Double?
     /// nil when the receipt doesn't say; the form then uses the default from Settings.
     var warrantyMonths: Int?
+    /// The receipt shows a warranty bought on top of the legal one (e.g. Alza's "Prodloužená záruka +3 roky").
+    var extendedWarranty: Bool = false
+    /// "S/N: …" or "IMEI: …" printed on the receipt.
+    var serialNumber: String?
     var usedAI: Bool = false
 }
 
@@ -26,8 +30,11 @@ struct ReceiptExtraction {
     @Guide(description: "Celková zaplacená cena jako číslo bez měny, 0 pokud není známa")
     var totalPrice: Double
 
-    @Guide(description: "Délka záruky v měsících. Pokud není na účtence uvedena, 24.")
+    @Guide(description: "Celková délka záruky v měsících, včetně prodloužené záruky koupené navíc (např. zákonných 24 měsíců + prodloužená záruka o 3 roky = 60). Pokud není na účtence uvedena, 24.")
     var warrantyMonths: Int
+
+    @Guide(description: "true, pokud účtenka obsahuje prodlouženou nebo rozšířenou záruku (např. položka „Prodloužená záruka“, „+1 rok záruky“, „Záruka 5 let“), jinak false")
+    var hasExtendedWarranty: Bool
 }
 
 enum ReceiptParser {
@@ -42,11 +49,17 @@ enum ReceiptParser {
                 draft.productName = ai.productName
                 draft.purchaseDate = isoDate(ai.purchaseDate) ?? fallback.purchaseDate
                 draft.price = ai.totalPrice > 0 ? ai.totalPrice : fallback.price
-                // The model answers 24 when the receipt says nothing, so 24 only counts if the rules saw it too.
-                if (1...240).contains(ai.warrantyMonths) && ai.warrantyMonths != 24 {
-                    draft.warrantyMonths = ai.warrantyMonths
-                } else {
-                    draft.warrantyMonths = fallback.warrantyMonths
+                draft.serialNumber = fallback.serialNumber
+                draft.warrantyMonths = fallback.warrantyMonths
+                draft.extendedWarranty = fallback.extendedWarranty
+                // The rules read the receipt's own words, so they win. The model answers 24 when the
+                // receipt says nothing, so its 24 doesn't count; past 24 it must say it saw an extension.
+                let aiMonths = (1...240).contains(ai.warrantyMonths) ? ai.warrantyMonths : nil
+                if fallback.warrantyMonths == nil, let aiMonths, aiMonths != 24 {
+                    if aiMonths < 24 || ai.hasExtendedWarranty {
+                        draft.warrantyMonths = aiMonths
+                        draft.extendedWarranty = aiMonths > 24
+                    }
                 }
                 return draft
             }
@@ -76,7 +89,11 @@ enum ReceiptParser {
         draft.storeName = lines.first ?? ""
         draft.purchaseDate = firstDate(in: text)
         draft.price = totalPrice(in: lines)
-        draft.warrantyMonths = warrantyMonths(in: text)
+        draft.serialNumber = serialNumber(in: text)
+        if let warranty = warranty(in: text) {
+            draft.warrantyMonths = warranty.months
+            draft.extendedWarranty = warranty.extended
+        }
         return draft
     }
 
@@ -132,15 +149,71 @@ enum ReceiptParser {
         return Double(number)
     }
 
-    private static func warrantyMonths(in text: String) -> Int? {
-        let pattern = #"(?:záruk|zaruk|garanc|warrant)\w*\D{0,12}(\d{1,3})\s*(měs|mes|m\b|let|rok|month|mo\b|year|yr)"#
+    /// "S/N: C02XK1ABJG5J", "Sériové číslo: …", "IMEI 356789012345678".
+    static func serialNumber(in text: String) -> String? {
+        let pattern = #"(?<![\p{L}\d])(?:S/N|SN|sériové číslo|seriove cislo|výrobní číslo|vyrobni cislo|serial(?: number| no\.?)?|IMEI)\s*[:#.]?\s*([A-Z0-9][A-Z0-9-]{4,29})\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
         let ns = text as NSString
-        guard let match = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
-              let n = Int(ns.substring(with: match.range(at: 1))) else { return nil }
-        let unit = ns.substring(with: match.range(at: 2)).lowercased()
-        let years = unit.hasPrefix("let") || unit.hasPrefix("rok") || unit.hasPrefix("year") || unit.hasPrefix("yr")
-        let months = years ? n * 12 : n
-        return (1...240).contains(months) ? months : nil
+        guard let match = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) else { return nil }
+        let value = ns.substring(with: match.range(at: 1))
+        // A real serial has digits in it; this skips words like "SN: ANO".
+        return value.rangeOfCharacter(from: .decimalDigits) == nil ? nil : value.uppercased()
+    }
+
+    /// Units after a number: months or years, Czech and English.
+    private static let unit = #"(měsíc\w*|mesic\w*|měs\.?|mes\.?|m\.|let|roky|rok\w*|years?|yrs?|months?|mo\.?)"#
+
+    private static func months(_ n: Int, _ unit: String) -> Int {
+        let u = unit.lowercased()
+        let years = u.hasPrefix("let") || u.hasPrefix("rok") || u.hasPrefix("year") || u.hasPrefix("yr")
+        return years ? n * 12 : n
+    }
+
+    /// Total warranty in months and whether it was extended beyond the legal 24 months.
+    /// "Prodloužená záruka o 3 roky" or "+1 rok záruky" add to the legal 24 months;
+    /// "Záruka 36 měsíců" or "5 let záruka" is the whole length. The longest one found wins,
+    /// since a receipt often lists the legal warranty and the bought extension separately.
+    static func warranty(in text: String) -> (months: Int, extended: Bool)? {
+        let word = #"(?:záruk|zaruk|garanc|warrant)\w*"#
+        let extensionWord = #"(?:prodlouž|prodlouz|rozšíř|rozsir|extended|extra)\w*"#
+        var found: [Int] = []
+
+        // Added on top: "+3 roky záruky", "prodloužená záruka o 3 roky", "extended warranty +2 years".
+        let added = [
+            #"\+\s*(\d{1,2})\s*"# + unit + #"\s*(?:\w+\s+)?"# + word,
+            extensionWord + #"\s+"# + word + #"\D{0,6}?(?:\+|\bo\b|\bby\b)\s*(\d{1,2})\s*"# + unit,
+            word + #"\s*\+\s*(\d{1,2})\s*"# + unit,
+        ]
+        for pattern in added {
+            for (n, u) in matches(pattern, in: text) {
+                let total = 24 + months(n, u)
+                if (25...240).contains(total) { found.append(total) }
+            }
+        }
+
+        // The whole length: "Záruka 36 měsíců", "záruka: 2 roky", "5 let záruka".
+        let whole = [
+            word + #"\D{0,12}?(\d{1,3})\s*"# + unit + #"(?!\w)"#,
+            #"(\d{1,2})\s*"# + unit + #"\s+(?:\w+\s+)?"# + word,
+        ]
+        for pattern in whole {
+            for (n, u) in matches(pattern, in: text) {
+                let total = months(n, u)
+                if (1...240).contains(total) { found.append(total) }
+            }
+        }
+
+        guard let best = found.max() else { return nil }
+        // Past the legal 24 months it's an extension, whether bought or the maker's own.
+        return (best, best > 24)
+    }
+
+    private static func matches(_ pattern: String, in text: String) -> [(Int, String)] {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return [] }
+        let ns = text as NSString
+        return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).compactMap { m in
+            guard m.numberOfRanges >= 3, let n = Int(ns.substring(with: m.range(at: 1))) else { return nil }
+            return (n, ns.substring(with: m.range(at: 2)))
+        }
     }
 }

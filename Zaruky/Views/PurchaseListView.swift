@@ -33,6 +33,8 @@ struct PurchaseListView: View {
     @State private var showSettings = false
     @State private var showDemoViewer = false
     @State private var showExpired = true
+    /// "Remind you before the warranty ends?" after the first saved receipt.
+    @State private var askReminders = false
 
     // Folder editing
     @State private var showFolderEditor = false
@@ -48,6 +50,11 @@ struct PurchaseListView: View {
     private var selectedFolder: Folder? {
         if case .folder(let id) = filter { return folders.first { $0.id == id } }
         return nil
+    }
+
+    /// Changes whenever something the widgets show changes.
+    private var widgetSignature: [String] {
+        purchases.map { "\($0.id)|\($0.productName)|\($0.storeName)|\($0.warrantyEndDate.timeIntervalSince1970)|\($0.price ?? -1)|\($0.currencyCode)" }
     }
 
     private var isSearching: Bool {
@@ -122,12 +129,17 @@ struct PurchaseListView: View {
             if case .success(let urls) = result { importFiles(urls) }
         }
         .onOpenURL { url in
+            // A widget opens a receipt's detail.
+            if let id = WidgetBridge.purchaseID(from: url) {
+                if let purchase = purchases.first(where: { $0.id == id }) { path = [purchase] }
+                return
+            }
             // "Open in Záruky" / "Copy to Záruky" from the share sheet in Files, Mail, Safari…
             guard url.isFileURL else { return }
             guard store.canAdd(currentCount: purchases.count) else { showPaywall = true; return }
             importFiles([url])
         }
-        .sheet(item: $formContext, onDismiss: showNextImport) { context in
+        .sheet(item: $formContext, onDismiss: formClosed) { context in
             PurchaseFormView(purchase: nil, image: context.image, initialFolder: selectedFolder,
                              prefilledText: context.text,
                              queueNote: importQueue.isEmpty ? nil
@@ -138,6 +150,13 @@ struct PurchaseListView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(importNote ?? "")
+        }
+        .alert(L("Připomenout konec záruky?", "Remind you when the warranty ends?"), isPresented: $askReminders) {
+            Button(L("Připomínat", "Remind me")) { allowReminders() }
+            Button(L("Teď ne", "Not now"), role: .cancel) { declineReminders() }
+        } message: {
+            Text(L("Ozvu se \(AppFormat.days(AppSettings.reminderDays)) předtím, než záruka skončí, ať stihneš případnou reklamaci.",
+                   "You'll hear from me \(AppFormat.days(AppSettings.reminderDays)) before a warranty ends, so there's time for a claim."))
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(usedCount: purchases.count)
@@ -166,20 +185,22 @@ struct PurchaseListView: View {
             Text(L("Účtenky ve složce zůstanou, jen budou bez složky.",
                    "Receipts in the folder are kept, they just won't be in a folder."))
         }
-        .confirmationDialog(
+        .alert(
             L("Smazat účtenku?", "Delete receipt?"),
-            isPresented: Binding(get: { purchaseToDelete != nil }, set: { if !$0 { purchaseToDelete = nil } }),
-            titleVisibility: .visible
+            isPresented: Binding(get: { purchaseToDelete != nil }, set: { if !$0 { purchaseToDelete = nil } })
         ) {
+            Button(L("Zrušit", "Cancel"), role: .cancel) { purchaseToDelete = nil }
             Button(L("Smazat", "Delete"), role: .destructive) { deletePurchase() }
         } message: {
             Text(L("Účtenka i připomínka zmizí ze všech tvých zařízení.",
                    "The receipt and its reminder are removed from all your devices."))
         }
         .task(id: purchases.count) { await NotificationService.sync(with: purchases) }
+        .onChange(of: widgetSignature, initial: true) { _, _ in WidgetBridge.update(with: purchases) }
         .task { openDemoScreen() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await NotificationService.sync(with: purchases) } }
+            if phase == .background { WidgetBridge.update(with: purchases) }
         }
         .onChange(of: folders.map(\.id)) { _, ids in
             // The selected folder may have been deleted, here or on another device.
@@ -204,7 +225,12 @@ struct PurchaseListView: View {
 
                 if filter == .all && !isSearching && !purchases.isEmpty {
                     SummaryCard(purchases: purchases)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, store.isUnlocked ? 8 : 0)
+                    // Up top, so it isn't hidden under the bottom bar when the list is short.
+                    if !store.isUnlocked {
+                        FreeLimitCard(used: purchases.count) { showPaywall = true }
+                            .padding(.bottom, 8)
+                    }
                 }
 
                 ForEach(WarrantyStatus.allCases) { status in
@@ -226,11 +252,6 @@ struct PurchaseListView: View {
                 if filtered.isEmpty {
                     emptyFilterState
                         .padding(.top, 40)
-                }
-
-                if !store.isUnlocked && !purchases.isEmpty {
-                    FreeLimitCard(used: purchases.count) { showPaywall = true }
-                        .padding(.top, 12)
                 }
 
                 SyncStatusFooter()
@@ -259,8 +280,12 @@ struct PurchaseListView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             if status == .expired && !isSearching {
-                Button(showExpired ? L("Skrýt", "Hide") : L("Zobrazit", "Show")) {
+                Button {
                     showExpired.toggle()
+                } label: {
+                    Text(showExpired ? L("Skrýt", "Hide") : L("Zobrazit", "Show"))
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(.rect)
                 }
                 .font(.subheadline)
             }
@@ -406,6 +431,36 @@ struct PurchaseListView: View {
         formContext = FormContext(image: accepted[0].image, text: accepted[0].text)
     }
 
+    private func formClosed() {
+        if importQueue.isEmpty {
+            Task { await offerReminders() }
+        } else {
+            showNextImport()
+        }
+    }
+
+    /// Asks about reminders once the first receipt is saved, instead of at first launch:
+    /// by then it's clear what they're for, and iOS only shows its own prompt once.
+    private func offerReminders() async {
+        guard !DemoMode.isOn, !purchases.isEmpty, AppSettings.remindersOn,
+              await NotificationService.notAskedYet() else { return }
+        try? await Task.sleep(for: .milliseconds(450))
+        askReminders = true
+    }
+
+    private func allowReminders() {
+        Task {
+            await NotificationService.requestAuthorization()
+            await NotificationService.sync(with: purchases)
+        }
+    }
+
+    private func declineReminders() {
+        // Settings then shows reminders off; turning them on there asks iOS again.
+        UserDefaults.standard.set(false, forKey: AppSettings.Key.remindersOn)
+        Task { await NotificationService.sync(with: purchases) }
+    }
+
     private func showNextImport() {
         guard !importQueue.isEmpty else { return }
         let next = importQueue.removeFirst()
@@ -511,9 +566,10 @@ struct SummaryCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(L("Pod zárukou máš", "Under warranty"))
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .foregroundStyle(.white)
                 Text(AppFormat.price(protectedValue, currency: currency))
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(.largeTitle.bold())
+                    .fontDesign(.rounded)
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
                     .minimumScaleFactor(0.6)
@@ -530,8 +586,8 @@ struct SummaryCard: View {
         .padding(18)
         .background {
             RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .fill(LinearGradient(colors: [Color(red: 0.13, green: 0.70, blue: 0.50),
-                                              Color(red: 0.03, green: 0.42, blue: 0.31)],
+                .fill(LinearGradient(colors: [Color(red: 0.06, green: 0.50, blue: 0.37),
+                                              Color(red: 0.02, green: 0.35, blue: 0.26)],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(alignment: .topTrailing) {
                     Image(systemName: "checkmark.seal.fill")
@@ -551,13 +607,15 @@ struct SummaryCard: View {
             Image(systemName: symbol)
                 .foregroundStyle(highlight ? Theme.amber : .white)
             Text("\(value)").fontWeight(.bold)
-            Text(label).foregroundStyle(.white.opacity(0.9))
+            Text(label)
         }
         .font(.subheadline)
         .foregroundStyle(.white)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
         .background(.white.opacity(highlight ? 0.22 : 0.15), in: Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value) \(label)")
     }
 }
 
@@ -738,7 +796,7 @@ struct FolderBar: View {
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 1)
-                    .background(isSelected ? Color.white.opacity(0.25) : Color(.tertiarySystemFill), in: Capsule())
+                    .background(isSelected ? Color.black.opacity(0.22) : Color(.tertiarySystemFill), in: Capsule())
             }
             .font(.subheadline.weight(.semibold))
             .padding(.leading, 12)
@@ -750,7 +808,10 @@ struct FolderBar: View {
             .shadow(color: .black.opacity(isSelected ? 0.12 : 0.04), radius: 4, y: 1)
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(AppFormat.receipts(count))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 

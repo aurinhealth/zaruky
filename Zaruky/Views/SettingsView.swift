@@ -354,6 +354,25 @@ struct SettingsView: View {
                 }
                 .tint(.primary)
             }
+
+            NavigationLink {
+                PrivacyView(inSheet: false)
+            } label: {
+                Label {
+                    Text(L("Ochrana soukromí", "Privacy"))
+                } icon: {
+                    SettingsIcon(symbol: "hand.raised.fill", color: .blue)
+                }
+            }
+
+            Button { openURL(AppInfo.termsURL) } label: {
+                Label {
+                    Text(L("Podmínky používání", "Terms of use")).foregroundStyle(.primary)
+                } icon: {
+                    SettingsIcon(symbol: "doc.text.fill", color: .gray)
+                }
+            }
+            .tint(.primary)
         } header: {
             Text(L("O appce", "About"))
         } footer: {

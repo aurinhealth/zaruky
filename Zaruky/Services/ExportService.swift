@@ -14,6 +14,9 @@ struct ExportItem: Sendable {
     let notes: String
     let statusTitle: String
     let imageData: Data?
+    let serialNumber: String
+    /// Warranty card, product photo… with their kind's name.
+    let attachments: [(title: String, data: Data)]
 
     @MainActor
     init(_ purchase: Purchase) {
@@ -28,6 +31,8 @@ struct ExportItem: Sendable {
         notes = purchase.notes
         statusTitle = purchase.status.title
         imageData = purchase.receiptImageData
+        serialNumber = purchase.serialNumber
+        attachments = purchase.sortedAttachments.compactMap { a in a.imageData.map { (title: a.kind.title, data: $0) } }
     }
 }
 
@@ -83,6 +88,14 @@ enum ExportService {
             try data.write(to: photos.appendingPathComponent(name))
             photoNames.append(name)
         }
+        // Extra documents next to the receipt photos: 001-iPhone-16-Zarucni-list-1.jpg
+        for (index, item) in items.enumerated() {
+            for (number, attachment) in item.attachments.enumerated() {
+                let name = String(format: "%03d-", index + 1) + safeFileName(item.productName) + "-"
+                    + safeFileName(attachment.title.folding(options: .diacriticInsensitive, locale: nil)) + "-\(number + 1).jpg"
+                try attachment.data.write(to: photos.appendingPathComponent(name))
+            }
+        }
         try csv(items, photoNames: photoNames).write(to: folder.appendingPathComponent(L("uctenky.csv", "receipts.csv")))
         try pdfData(items).write(to: folder.appendingPathComponent(L("prehled.pdf", "overview.pdf")))
 
@@ -124,15 +137,15 @@ enum ExportService {
             return L10n.isEnglish ? text : text.replacingOccurrences(of: ".", with: ",")
         }
 
-        let header = L("Produkt;Obchod;Složka;Datum nákupu;Záruka (měsíce);Konec záruky;Stav;Cena;Měna;Poznámka;Fotka",
-                       "Product;Store;Folder;Purchase date;Warranty (months);Warranty ends;Status;Price;Currency;Note;Photo")
+        let header = L("Produkt;Obchod;Složka;Datum nákupu;Záruka (měsíce);Konec záruky;Stav;Cena;Měna;Sériové číslo;Poznámka;Fotka",
+                       "Product;Store;Folder;Purchase date;Warranty (months);Warranty ends;Status;Price;Currency;Serial number;Note;Photo")
         var lines = [header]
         for (index, item) in items.enumerated() {
             let photo = index < photoNames.count ? photoNames[index].map { L("fotky/", "photos/") + $0 } ?? "" : ""
             lines.append([
                 field(item.productName), field(item.storeName), field(item.folderName),
                 iso.string(from: item.purchaseDate), String(item.warrantyMonths), iso.string(from: item.warrantyEndDate),
-                field(item.statusTitle), number(item.price), item.currencyCode, field(item.notes), field(photo),
+                field(item.statusTitle), number(item.price), item.currencyCode, field(item.serialNumber), field(item.notes), field(photo),
             ].joined(separator: ";"))
         }
         return Data(("\u{FEFF}" + lines.joined(separator: "\r\n") + "\r\n").utf8)
@@ -214,21 +227,28 @@ enum ExportService {
 
             // One page per photo, with the details on top, ready to print for a claim.
             for item in items {
-                guard let data = item.imageData, let image = UIImage(data: data) else { continue }
-                context.beginPage()
-                var top = margin
-                NSAttributedString(string: item.productName, attributes: title).draw(in: CGRect(x: margin, y: top, width: width, height: 32))
-                top += 34
-                let details = [item.storeName,
-                               L("koupeno \(AppFormat.date(item.purchaseDate))", "bought \(AppFormat.date(item.purchaseDate))"),
-                               L("záruka do \(AppFormat.date(item.warrantyEndDate))", "warranty until \(AppFormat.date(item.warrantyEndDate))"),
-                               AppFormat.price(item.price, currency: item.currencyCode)]
-                    .filter { !$0.isEmpty && $0 != "—" }
-                    .joined(separator: " · ")
-                NSAttributedString(string: details, attributes: subtitle).draw(in: CGRect(x: margin, y: top, width: width, height: 30))
-                top += 30
-                let box = CGRect(x: margin, y: top, width: width, height: page.height - margin - top)
-                image.draw(in: aspectFit(image.size, in: box))
+                var pages: [(title: String?, data: Data)] = []
+                if let data = item.imageData { pages.append((title: nil, data: data)) }
+                pages += item.attachments.map { (title: Optional($0.title), data: $0.data) }
+                for pageImage in pages {
+                    guard let image = UIImage(data: pageImage.data) else { continue }
+                    context.beginPage()
+                    var top = margin
+                    let heading = pageImage.title.map { item.productName + " – " + $0 } ?? item.productName
+                    NSAttributedString(string: heading, attributes: title).draw(in: CGRect(x: margin, y: top, width: width, height: 32))
+                    top += 34
+                    let details = [item.storeName,
+                                   L("koupeno \(AppFormat.date(item.purchaseDate))", "bought \(AppFormat.date(item.purchaseDate))"),
+                                   L("záruka do \(AppFormat.date(item.warrantyEndDate))", "warranty until \(AppFormat.date(item.warrantyEndDate))"),
+                                   AppFormat.price(item.price, currency: item.currencyCode),
+                                   item.serialNumber.isEmpty ? "" : L("S/N \(item.serialNumber)", "S/N \(item.serialNumber)")]
+                        .filter { !$0.isEmpty && $0 != "—" }
+                        .joined(separator: " · ")
+                    NSAttributedString(string: details, attributes: subtitle).draw(in: CGRect(x: margin, y: top, width: width, height: 30))
+                    top += 30
+                    let box = CGRect(x: margin, y: top, width: width, height: page.height - margin - top)
+                    image.draw(in: aspectFit(image.size, in: box))
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ struct ZarukyApp: App {
     /// signed in to iCloud, and stays local otherwise. The store file is the same as
     /// before, so receipts saved by earlier versions are kept and uploaded.
     private let container: ModelContainer = {
-        let schema = Schema([Purchase.self, Folder.self])
+        let schema = Schema([Purchase.self, Folder.self, Attachment.self])
         if DemoMode.isOn { return MainActor.assumeIsolated { DemoMode.makeContainer(schema: schema) } }
         do {
             let config = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
@@ -30,9 +30,8 @@ struct ZarukyApp: App {
             PurchaseListView()
                 .environment(store)
                 .tint(Theme.brand)
-                .task {
-                    if !DemoMode.isOn { await NotificationService.requestAuthorization() }
-                }
+                // Notifications are asked for after the first saved receipt (PurchaseListView),
+                // when it's clear what the reminder is for.
         }
         .modelContainer(container)
     }

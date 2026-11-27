@@ -5,9 +5,15 @@ enum NotificationService {
     /// How many days before the warranty ends the reminder fires (Settings).
     static var daysBefore: Int { AppSettings.reminderDays }
 
-    static func requestAuthorization() async {
-        _ = try? await UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound, .badge])
+    @discardableResult
+    static func requestAuthorization() async -> Bool {
+        (try? await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+    }
+
+    /// True while iOS has never asked the user about notifications for this app.
+    static func notAskedYet() async -> Bool {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .notDetermined
     }
 
     static func schedule(for purchase: Purchase) {
