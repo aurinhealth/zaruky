@@ -33,26 +33,44 @@ struct PurchaseFormView: View {
                     Section {
                         Image(uiImage: image)
                             .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 220)
+                            .scaledToFill()
+                            .frame(height: 200)
                             .frame(maxWidth: .infinity)
-                        if isReading {
-                            HStack {
-                                ProgressView()
-                                Text(L("Čtu účtenku…", "Reading the receipt…")).foregroundStyle(.secondary)
+                            .clipShape(.rect(cornerRadius: 14, style: .continuous))
+                            .overlay(alignment: .bottomLeading) {
+                                if isReading {
+                                    HStack(spacing: 8) {
+                                        ProgressView()
+                                        Text(L("Čtu účtenku…", "Reading the receipt…"))
+                                            .font(.subheadline.weight(.semibold))
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 9)
+                                    .glassEffect(.regular, in: .capsule)
+                                    .padding(10)
+                                    .transition(.opacity)
+                                }
                             }
-                        } else if let readNote {
-                            Text(readNote).font(.footnote).foregroundStyle(.secondary)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+                        if let readNote, !isReading {
+                            Label(readNote, systemImage: "wand.and.sparkles")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
                     }
+                    .animation(.snappy, value: isReading)
                 }
 
                 Section(L("Nákup", "Purchase")) {
-                    TextField(L("Produkt", "Product"), text: $productName)
+                    TextField(L("Co jsi koupil? (např. iPhone 16)", "What did you buy? (e.g. iPhone 16)"), text: $productName)
+                        .font(.headline)
                     TextField(L("Obchod", "Store"), text: $storeName)
                     DatePicker(L("Datum nákupu", "Purchase date"), selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
-                    TextField(L("Cena (Kč)", "Price (CZK)"), text: $priceText)
-                        .keyboardType(.decimalPad)
+                    HStack {
+                        TextField(L("Cena", "Price"), text: $priceText)
+                            .keyboardType(.decimalPad)
+                        Text(L("Kč", "CZK")).foregroundStyle(.secondary)
+                    }
                 }
 
                 Section {
@@ -61,7 +79,13 @@ struct PurchaseFormView: View {
                             Text(AppFormat.warrantyLength(months: months)).tag(months)
                         }
                     }
-                    LabeledContent(L("Konec záruky", "Warranty ends"), value: AppFormat.date(endDate))
+                    LabeledContent {
+                        Text(AppFormat.date(endDate))
+                            .fontWeight(.semibold)
+                            .foregroundStyle(endDate < Date() ? Color.secondary : Theme.brand)
+                    } label: {
+                        Label(L("Konec záruky", "Warranty ends"), systemImage: "calendar.badge.checkmark")
+                    }
                 } header: {
                     Text(L("Záruka", "Warranty"))
                 } footer: {

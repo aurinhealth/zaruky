@@ -11,6 +11,7 @@ struct ZarukyApp: App {
     /// before, so receipts saved by earlier versions are kept and uploaded.
     private let container: ModelContainer = {
         let schema = Schema([Purchase.self, Folder.self])
+        if DemoMode.isOn { return MainActor.assumeIsolated { DemoMode.makeContainer(schema: schema) } }
         do {
             let config = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
             return try ModelContainer(for: schema, configurations: config)
@@ -28,7 +29,10 @@ struct ZarukyApp: App {
         WindowGroup {
             PurchaseListView()
                 .environment(store)
-                .task { await NotificationService.requestAuthorization() }
+                .tint(Theme.brand)
+                .task {
+                    if !DemoMode.isOn { await NotificationService.requestAuthorization() }
+                }
         }
         .modelContainer(container)
     }

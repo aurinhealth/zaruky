@@ -1,0 +1,117 @@
+name: Screenshots
+
+# Builds the app for the simulator, opens each main screen with sample data (-demo)
+# in Czech and English, and saves the screenshots as an artifact and on the
+# `screenshots` branch (screenshots/<branch>/...), so they can be viewed without a Mac.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Pick and boot an iPhone simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)["devices"]
+          best = None
+          for runtime, devs in data.items():
+              if "iOS-26" not in runtime: continue
+              for d in devs:
+                  n = d["name"]
+                  if n.startswith("iPhone") and "Pro" in n and "Max" not in n:
+                      best = d["udid"]
+          if not best:
+              for runtime, devs in data.items():
+                  if "iOS" in runtime:
+                      for d in devs:
+                          if d["name"].startswith("iPhone"): best = d["udid"]
+          print(best)')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl list devices | grep "$UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Build for simulator
+        run: |
+          xcodebuild build \
+            -project Zaruky.xcodeproj \
+            -scheme Zaruky \
+            -configuration Debug \
+            -destination "id=$UDID" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            -quiet
+
+      - name: Take screenshots
+        run: |
+          APP=$(ls -d build/Build/Products/Debug-iphonesimulator/Zaruky.app)
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 \
+            --cellularMode active --cellularBars 4 --wifiBars 3
+          mkdir -p shots
+          for lang in cs en; do
+            for screen in list detail folder form paywall empty; do
+              xcrun simctl terminate "$UDID" cz.zaruky.app 2>/dev/null || true
+              xcrun simctl launch "$UDID" cz.zaruky.app -demo -demoScreen "$screen" \
+                -AppleLanguages "($lang)" -AppleLocale "$([ $lang = en ] && echo en_GB || echo cs_CZ)"
+              sleep 6
+              xcrun simctl io "$UDID" screenshot "shots/${lang}-${screen}.png"
+            done
+            xcrun simctl ui "$UDID" appearance dark
+            xcrun simctl terminate "$UDID" cz.zaruky.app 2>/dev/null || true
+            xcrun simctl launch "$UDID" cz.zaruky.app -demo -demoScreen list -AppleLanguages "($lang)"
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "shots/${lang}-list-dark.png"
+            xcrun simctl ui "$UDID" appearance light
+          done
+          ls -la shots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots
+
+      - name: Publish to the screenshots branch
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          DIR="screenshots/${BRANCH//\//-}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git fetch origin screenshots || true
+          rm -rf "$RUNNER_TEMP/pub" && mkdir -p "$RUNNER_TEMP/pub"
+          cd "$RUNNER_TEMP/pub"
+          git init -q
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          git config http.extraheader "$(git -C "$GITHUB_WORKSPACE" config --get http.https://github.com/.extraheader)"
+          if git fetch -q origin screenshots; then git checkout -q -b screenshots FETCH_HEAD; else git checkout -q --orphan screenshots; fi
+          rm -rf "$DIR" && mkdir -p "$DIR"
+          cp "$GITHUB_WORKSPACE"/shots/*.png "$DIR/"
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898299+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Screenshots for $BRANCH (${GITHUB_SHA::7})" || exit 0
+          git push -q origin screenshots
