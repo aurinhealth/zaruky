@@ -12,7 +12,7 @@ enum WidgetBridge {
         snapshot.items = active
             .sorted { $0.warrantyEndDate < $1.warrantyEndDate }
             .prefix(6)
-            .map { WidgetSnapshot.Item(id: $0.id, name: $0.productName.isEmpty ? L("Bez názvu", "Untitled") : $0.productName,
+            .map { WidgetSnapshot.Item(id: $0.id, name: $0.productName.isEmpty ? L("Bez názvu", "Untitled", "Ohne Namen") : $0.productName,
                                        store: $0.storeName, endDate: $0.warrantyEndDate,
                                        symbol: ProductIcon.symbol(for: $0.productName)) }
         snapshot.value = active.filter { $0.currencyCode == currency }.compactMap(\.price).reduce(0, +)

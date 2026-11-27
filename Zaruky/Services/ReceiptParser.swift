@@ -124,7 +124,8 @@ enum ReceiptParser {
     }
 
     private static func totalPrice(in lines: [String]) -> Double? {
-        let keywords = ["celkem", "k úhradě", "k uhrade", "total", "suma", "zaplaceno"]
+        let keywords = ["celkem", "k úhradě", "k uhrade", "total", "suma", "zaplaceno",
+                        "summe", "gesamt", "zu zahlen"]
         for line in lines {
             let lower = line.lowercased()
             if keywords.contains(where: { lower.contains($0) }), let value = lastNumber(in: line) {
@@ -151,7 +152,7 @@ enum ReceiptParser {
 
     /// "S/N: C02XK1ABJG5J", "Sériové číslo: …", "IMEI 356789012345678".
     static func serialNumber(in text: String) -> String? {
-        let pattern = #"(?<![\p{L}\d])(?:S/N|SN|sériové číslo|seriove cislo|výrobní číslo|vyrobni cislo|serial(?: number| no\.?)?|IMEI)\s*[:#.]?\s*([A-Z0-9][A-Z0-9-]{4,29})\b"#
+        let pattern = #"(?<![\p{L}\d])(?:S/N|SN|sériové číslo|seriove cislo|výrobní číslo|vyrobni cislo|serial(?: number| no\.?)?|seriennummer|serien-nr\.?|IMEI)\s*[:#.]?\s*([A-Z0-9][A-Z0-9-]{4,29})\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
         let ns = text as NSString
         guard let match = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) else { return nil }
@@ -160,12 +161,13 @@ enum ReceiptParser {
         return value.rangeOfCharacter(from: .decimalDigits) == nil ? nil : value.uppercased()
     }
 
-    /// Units after a number: months or years, Czech and English.
-    private static let unit = #"(měsíc\w*|mesic\w*|měs\.?|mes\.?|m\.|let|roky|rok\w*|years?|yrs?|months?|mo\.?)"#
+    /// Units after a number: months or years, Czech, English and German.
+    private static let unit = #"(měsíc\w*|mesic\w*|měs\.?|mes\.?|m\.|let|roky|rok\w*|years?|yrs?|months?|mo\.?|monat\w*|mon\.?|jahr\w*|j\.)"#
 
     private static func months(_ n: Int, _ unit: String) -> Int {
         let u = unit.lowercased()
         let years = u.hasPrefix("let") || u.hasPrefix("rok") || u.hasPrefix("year") || u.hasPrefix("yr")
+            || u.hasPrefix("jahr") || u == "j."
         return years ? n * 12 : n
     }
 
@@ -174,14 +176,14 @@ enum ReceiptParser {
     /// "Záruka 36 měsíců" or "5 let záruka" is the whole length. The longest one found wins,
     /// since a receipt often lists the legal warranty and the bought extension separately.
     static func warranty(in text: String) -> (months: Int, extended: Bool)? {
-        let word = #"(?:záruk|zaruk|garanc|warrant)\w*"#
-        let extensionWord = #"(?:prodlouž|prodlouz|rozšíř|rozsir|extended|extra)\w*"#
+        let word = #"(?:záruk|zaruk|garanc|garantie|gewährleist|gewahrleist|warrant)\w*"#
+        let extensionWord = #"(?:prodlouž|prodlouz|rozšíř|rozsir|extended|extra|verlänger|verlanger|erweitert)\w*"#
         var found: [Int] = []
 
         // Added on top: "+3 roky záruky", "prodloužená záruka o 3 roky", "extended warranty +2 years".
         let added = [
             #"\+\s*(\d{1,2})\s*"# + unit + #"\s*(?:\w+\s+)?"# + word,
-            extensionWord + #"\s+"# + word + #"\D{0,6}?(?:\+|\bo\b|\bby\b)\s*(\d{1,2})\s*"# + unit,
+            extensionWord + #"\s+"# + word + #"\D{0,6}?(?:\+|\bo\b|\bby\b|\bum\b)\s*(\d{1,2})\s*"# + unit,
             word + #"\s*\+\s*(\d{1,2})\s*"# + unit,
         ]
         for pattern in added {

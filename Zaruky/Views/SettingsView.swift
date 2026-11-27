@@ -33,7 +33,7 @@ struct SettingsView: View {
                 dataSection
                 aboutSection
             }
-            .navigationTitle(L("Nastavení", "Settings"))
+            .navigationTitle(L("Nastavení", "Settings", "Einstellungen"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -48,7 +48,7 @@ struct SettingsView: View {
                     .presentationDetents([.medium, .large])
                     .ignoresSafeArea()
             }
-            .alert(L("Export se nepovedl", "Export failed"),
+            .alert(L("Export se nepovedl", "Export failed", "Export fehlgeschlagen"),
                    isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -84,7 +84,7 @@ struct SettingsView: View {
                     .background((store.isUnlocked ? Theme.brand : Theme.amber).gradient,
                                 in: .rect(cornerRadius: Theme.tileRadius, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(store.isUnlocked ? L("Odemčeno navždy", "Unlocked forever") : L("Verze zdarma", "Free version"))
+                    Text(store.isUnlocked ? L("Odemčeno navždy", "Unlocked forever", "Für immer freigeschaltet") : L("Verze zdarma", "Free version", "Gratisversion"))
                         .font(.headline)
                     Text(unlockSubtitle)
                         .font(.subheadline)
@@ -97,7 +97,7 @@ struct SettingsView: View {
             if !store.isUnlocked {
                 Button { showPaywall = true } label: {
                     Label {
-                        Text(L("Odemknout neomezeně účtenek", "Unlock unlimited receipts"))
+                        Text(L("Odemknout neomezeně účtenek", "Unlock unlimited receipts", "Unbegrenzt viele Belege freischalten"))
                             .fontWeight(.semibold)
                     } icon: {
                         SettingsIcon(symbol: "infinity", color: Theme.brand)
@@ -110,7 +110,7 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Label {
-                        Text(L("Obnovit nákup", "Restore purchase")).foregroundStyle(.primary)
+                        Text(L("Obnovit nákup", "Restore purchase", "Kauf wiederherstellen")).foregroundStyle(.primary)
                     } icon: {
                         SettingsIcon(symbol: "arrow.clockwise", color: .blue)
                     }
@@ -124,19 +124,17 @@ struct SettingsView: View {
             if let restoreNote {
                 Text(restoreNote)
             } else if !store.isUnlocked {
-                Text(L("Jednorázová platba, žádné předplatné. Platí na všech tvých zařízeních i v Rodinném sdílení.",
-                       "One-time payment, no subscription. Works on all your devices and with Family Sharing."))
+                Text(L("Jednorázová platba, žádné předplatné. Platí na všech tvých zařízeních i v Rodinném sdílení.", "One-time payment, no subscription. Works on all your devices and with Family Sharing.", "Einmalzahlung, kein Abo. Gilt auf allen deinen Geräten und mit der Familienfreigabe."))
             }
         }
     }
 
     private var unlockSubtitle: String {
         if store.isUnlocked {
-            return L("Neomezeně účtenek. Díky za podporu!", "Unlimited receipts. Thanks for your support!")
+            return L("Neomezeně účtenek. Díky za podporu!", "Unlimited receipts. Thanks for your support!", "Unbegrenzt viele Belege. Danke für deine Unterstützung!")
         }
         let used = min(purchases.count, PurchaseStore.freeLimit)
-        return L("Využito \(used) z \(PurchaseStore.freeLimit) účtenek zdarma",
-                 "\(used) of \(PurchaseStore.freeLimit) free receipts used")
+        return L("Využito \(used) z \(PurchaseStore.freeLimit) účtenek zdarma", "\(used) of \(PurchaseStore.freeLimit) free receipts used", "\(used) von \(PurchaseStore.freeLimit) Gratis-Belegen genutzt")
     }
 
     private func restore() async {
@@ -146,11 +144,11 @@ struct SettingsView: View {
         await store.restore()
         isRestoring = false
         if store.isUnlocked {
-            restoreNote = L("Nákup je obnovený, máš odemčeno.", "Purchase restored, you're unlocked.")
+            restoreNote = L("Nákup je obnovený, máš odemčeno.", "Purchase restored, you're unlocked.", "Kauf wiederhergestellt, alles ist freigeschaltet.")
         } else if let error = store.errorMessage {
             restoreNote = error
         } else {
-            restoreNote = L("Na tomhle Apple ID jsme žádný nákup nenašli.", "No purchase found for this Apple ID.")
+            restoreNote = L("Na tomhle Apple ID jsme žádný nákup nenašli.", "No purchase found for this Apple ID.", "Für diese Apple-ID wurde kein Kauf gefunden.")
         }
     }
 
@@ -160,7 +158,7 @@ struct SettingsView: View {
         Section {
             Toggle(isOn: $remindersOn) {
                 Label {
-                    Text(L("Připomínat konec záruky", "Remind me before warranties end"))
+                    Text(L("Připomínat konec záruky", "Remind me before warranties end", "Vor Garantieende erinnern"))
                 } icon: {
                     SettingsIcon(symbol: "bell.badge.fill", color: .red)
                 }
@@ -169,11 +167,11 @@ struct SettingsView: View {
             if remindersOn {
                 Picker(selection: $reminderDays) {
                     ForEach(dayOptions, id: \.self) { days in
-                        Text(L("\(AppFormat.days(days)) předem", "\(AppFormat.days(days)) before")).tag(days)
+                        Text(L("\(AppFormat.days(days)) předem", "\(AppFormat.days(days)) before", "\(AppFormat.days(days)) vorher")).tag(days)
                     }
                 } label: {
                     Label {
-                        Text(L("Kdy", "When"))
+                        Text(L("Kdy", "When", "Wann"))
                     } icon: {
                         SettingsIcon(symbol: "calendar.badge.clock", color: .orange)
                     }
@@ -185,9 +183,9 @@ struct SettingsView: View {
                     } label: {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(L("Upozornění jsou v iOS vypnutá", "Notifications are off in iOS"))
+                                Text(L("Upozornění jsou v iOS vypnutá", "Notifications are off in iOS", "Mitteilungen sind in iOS aus"))
                                     .foregroundStyle(.primary)
-                                Text(L("Klepni a povol je v Nastavení iPhonu.", "Tap to allow them in iPhone Settings."))
+                                Text(L("Klepni a povol je v Nastavení iPhonu.", "Tap to allow them in iPhone Settings.", "Tippe, um sie in den iPhone-Einstellungen zu erlauben."))
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
@@ -199,13 +197,11 @@ struct SettingsView: View {
                 }
             }
         } header: {
-            Text(L("Upozornění", "Reminders"))
+            Text(L("Upozornění", "Reminders", "Erinnerungen"))
         } footer: {
             Text(remindersOn
-                 ? L("Připomínka přijde v 9:00, \(AppFormat.days(reminderDays)) před koncem záruky.",
-                     "The reminder arrives at 9:00, \(AppFormat.days(reminderDays)) before the warranty ends.")
-                 : L("Žádné připomínky nepřijdou. Konec záruky uvidíš jen v appce.",
-                     "You won't get any reminders. You'll only see warranty end dates in the app."))
+                 ? L("Připomínka přijde v 9:00, \(AppFormat.days(reminderDays)) před koncem záruky.", "The reminder arrives at 9:00, \(AppFormat.days(reminderDays)) before the warranty ends.", "Die Erinnerung kommt um 9:00 Uhr, \(AppFormat.days(reminderDays)) vor Garantieende.")
+                 : L("Žádné připomínky nepřijdou. Konec záruky uvidíš jen v appce.", "You won't get any reminders. You'll only see warranty end dates in the app.", "Du bekommst keine Erinnerungen. Das Garantieende siehst du nur in der App."))
         }
     }
 
@@ -229,7 +225,7 @@ struct SettingsView: View {
                 }
             } label: {
                 Label {
-                    Text(L("Délka záruky", "Warranty length"))
+                    Text(L("Délka záruky", "Warranty length", "Garantiedauer"))
                 } icon: {
                     SettingsIcon(symbol: "shield.lefthalf.filled", color: Theme.brand)
                 }
@@ -242,17 +238,16 @@ struct SettingsView: View {
                     Text(AppSettings.name(for: currency))
                 } label: {
                     Label {
-                        Text(L("Měna", "Currency"))
+                        Text(L("Měna", "Currency", "Währung"))
                     } icon: {
                         SettingsIcon(symbol: "banknote.fill", color: .indigo)
                     }
                 }
             }
         } header: {
-            Text(L("Nové účtenky", "New receipts"))
+            Text(L("Nové účtenky", "New receipts", "Neue Belege"))
         } footer: {
-            Text(L("Použije se u nově přidaných účtenek, u každé to jde změnit. V EU platí na nové zboží zákonná záruka 24 měsíců.",
-                   "Used for new receipts, and you can change it on each one. In the EU, new goods have a 24-month legal warranty."))
+            Text(L("Použije se u nově přidaných účtenek, u každé to jde změnit. V EU platí na nové zboží zákonná záruka 24 měsíců.", "Used for new receipts, and you can change it on each one. In the EU, new goods have a 24-month legal warranty.", "Gilt für neue Belege und lässt sich bei jedem ändern. In der EU gilt für neue Ware eine gesetzliche Gewährleistung von 24 Monaten."))
         }
     }
 
@@ -260,14 +255,14 @@ struct SettingsView: View {
 
     private var dataSection: some View {
         Section {
-            exportButton(.pdf, title: L("Přehled do PDF", "Overview as PDF"),
-                         detail: L("Seznam účtenek a jejich fotky, k tisku", "List of receipts with photos, ready to print"),
+            exportButton(.pdf, title: L("Přehled do PDF", "Overview as PDF", "Übersicht als PDF"),
+                         detail: L("Seznam účtenek a jejich fotky, k tisku", "List of receipts with photos, ready to print", "Liste der Belege mit Fotos, bereit zum Drucken"),
                          symbol: "doc.richtext.fill", color: .red)
-            exportButton(.zip, title: L("Kompletní záloha (ZIP)", "Full backup (ZIP)"),
-                         detail: L("Fotky účtenek, tabulka pro Excel a PDF", "Receipt photos, a spreadsheet and the PDF"),
+            exportButton(.zip, title: L("Kompletní záloha (ZIP)", "Full backup (ZIP)", "Komplettes Backup (ZIP)"),
+                         detail: L("Fotky účtenek, tabulka pro Excel a PDF", "Receipt photos, a spreadsheet and the PDF", "Belegfotos, eine Tabelle und das PDF"),
                          symbol: "archivebox.fill", color: .blue)
         } header: {
-            Text(L("Data", "Data"))
+            Text(L("Data", "Data", "Daten"))
         } footer: {
             Text(dataFooter)
         }
@@ -276,12 +271,9 @@ struct SettingsView: View {
     private var dataFooter: String {
         let iCloud = FileManager.default.ubiquityIdentityToken != nil || DemoMode.isOn
         let sync = iCloud
-            ? L("Účtenky jsou v tvém iCloudu a synchronizují se mezi tvými zařízeními.",
-                "Receipts are in your iCloud and synced across your devices.")
-            : L("iCloud není zapnutý, účtenky jsou jen v tomto telefonu.",
-                "iCloud is off, so receipts are only on this phone.")
-        return sync + " " + L("Data zůstávají u tebe, export si můžeš uložit do Souborů nebo poslat kam chceš.",
-                              "Your data stays with you. Save the export to Files or send it wherever you like.")
+            ? L("Účtenky jsou v tvém iCloudu a synchronizují se mezi tvými zařízeními.", "Receipts are in your iCloud and synced across your devices.", "Die Belege liegen in deiner iCloud und werden auf deinen Geräten synchronisiert.")
+            : L("iCloud není zapnutý, účtenky jsou jen v tomto telefonu.", "iCloud is off, so receipts are only on this phone.", "iCloud ist aus, die Belege sind also nur auf diesem iPhone.")
+        return sync + " " + L("Data zůstávají u tebe, export si můžeš uložit do Souborů nebo poslat kam chceš.", "Your data stays with you. Save the export to Files or send it wherever you like.", "Deine Daten bleiben bei dir. Sichere den Export in Dateien oder schick ihn, wohin du willst.")
     }
 
     private func exportButton(_ kind: ExportService.Kind, title: String, detail: String, symbol: String, color: Color) -> some View {
@@ -327,7 +319,7 @@ struct SettingsView: View {
         Section {
             Button { openURL(AppInfo.reviewURL) } label: {
                 Label {
-                    Text(L("Ohodnotit v App Storu", "Rate on the App Store")).foregroundStyle(.primary)
+                    Text(L("Ohodnotit v App Storu", "Rate on the App Store", "Im App Store bewerten")).foregroundStyle(.primary)
                 } icon: {
                     SettingsIcon(symbol: "star.fill", color: Theme.amber)
                 }
@@ -335,9 +327,9 @@ struct SettingsView: View {
             .tint(.primary)
 
             ShareLink(item: AppInfo.appStoreURL,
-                      message: Text(L("Hlídá mi záruky a účtenky, zkus to taky.", "It keeps track of my warranties and receipts, give it a try."))) {
+                      message: Text(L("Hlídá mi záruky a účtenky, zkus to taky.", "It keeps track of my warranties and receipts, give it a try.", "Die App behält meine Garantien und Belege im Blick, probier sie aus."))) {
                 Label {
-                    Text(L("Doporučit známým", "Tell a friend")).foregroundStyle(.primary)
+                    Text(L("Doporučit známým", "Tell a friend", "Weiterempfehlen")).foregroundStyle(.primary)
                 } icon: {
                     SettingsIcon(symbol: "heart.fill", color: .pink)
                 }
@@ -347,7 +339,7 @@ struct SettingsView: View {
             if let mail = supportMailURL {
                 Button { openURL(mail) } label: {
                     Label {
-                        Text(L("Napsat nám", "Contact us")).foregroundStyle(.primary)
+                        Text(L("Napsat nám", "Contact us", "Kontakt")).foregroundStyle(.primary)
                     } icon: {
                         SettingsIcon(symbol: "envelope.fill", color: .teal)
                     }
@@ -359,7 +351,7 @@ struct SettingsView: View {
                 PrivacyView(inSheet: false)
             } label: {
                 Label {
-                    Text(L("Ochrana soukromí", "Privacy"))
+                    Text(L("Ochrana soukromí", "Privacy", "Datenschutz"))
                 } icon: {
                     SettingsIcon(symbol: "hand.raised.fill", color: .blue)
                 }
@@ -367,16 +359,16 @@ struct SettingsView: View {
 
             Button { openURL(AppInfo.termsURL) } label: {
                 Label {
-                    Text(L("Podmínky používání", "Terms of use")).foregroundStyle(.primary)
+                    Text(L("Podmínky používání", "Terms of use", "Nutzungsbedingungen")).foregroundStyle(.primary)
                 } icon: {
                     SettingsIcon(symbol: "doc.text.fill", color: .gray)
                 }
             }
             .tint(.primary)
         } header: {
-            Text(L("O appce", "About"))
+            Text(L("O appce", "About", "Info"))
         } footer: {
-            Text("Záruky \(AppInfo.version)")
+            Text("\(AppInfo.name) \(AppInfo.version)")
                 .frame(maxWidth: .infinity)
                 .padding(.top, 12)
         }
@@ -388,8 +380,8 @@ struct SettingsView: View {
         parts.scheme = "mailto"
         parts.path = AppInfo.supportEmail
         parts.queryItems = [
-            URLQueryItem(name: "subject", value: L("Záruky – zpětná vazba", "Záruky – feedback")),
-            URLQueryItem(name: "body", value: "\n\n—\nZáruky \(AppInfo.version), iOS \(UIDevice.current.systemVersion)"),
+            URLQueryItem(name: "subject", value: "\(AppInfo.name) – " + L("zpětná vazba", "feedback", "Feedback")),
+            URLQueryItem(name: "body", value: "\n\n—\n\(AppInfo.name) \(AppInfo.version), iOS \(UIDevice.current.systemVersion)"),
         ]
         return parts.url
     }
@@ -412,14 +404,14 @@ struct CurrencyPicker: View {
             let common = AppSettings.commonCurrencies.filter(matches)
             let other = AppSettings.allCurrencies.filter { !AppSettings.commonCurrencies.contains($0) && matches($0) }
             if !common.isEmpty {
-                Section(L("Nejčastější", "Common")) { ForEach(common, id: \.self, content: row) }
+                Section(L("Nejčastější", "Common", "Häufig")) { ForEach(common, id: \.self, content: row) }
             }
             if !other.isEmpty {
-                Section(L("Všechny měny", "All currencies")) { ForEach(other, id: \.self, content: row) }
+                Section(L("Všechny měny", "All currencies", "Alle Währungen")) { ForEach(other, id: \.self, content: row) }
             }
         }
-        .navigationTitle(L("Měna", "Currency"))
-        .searchable(text: $query, prompt: L("Hledat měnu", "Search currency"))
+        .navigationTitle(L("Měna", "Currency", "Währung"))
+        .searchable(text: $query, prompt: L("Hledat měnu", "Search currency", "Währung suchen"))
     }
 
     private func row(_ code: String) -> some View {

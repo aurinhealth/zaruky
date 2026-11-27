@@ -13,7 +13,8 @@ enum AppSettings {
 
     static let defaultReminderDays = 30
     static let defaultWarranty = 24
-    static let defaultCurrency = "CZK"
+    /// Czech koruna in Czech, euro in German, and koruna in English (the app is made in Czechia).
+    static var defaultCurrency: String { L10n.isGerman ? "EUR" : "CZK" }
 
     static let reminderDayOptions = [7, 14, 30, 60, 90]
     static let warrantyOptions = [6, 12, 24, 36, 48, 60]
@@ -51,7 +52,7 @@ enum AppSettings {
     /// Short symbol shown next to the price field, e.g. "Kč", "€".
     static func symbol(for code: String) -> String {
         switch code {
-        case "CZK": L("Kč", "CZK")
+        case "CZK": L("Kč", "CZK", "CZK")
         case "EUR": "€"
         case "USD": "$"
         case "GBP": "£"
@@ -71,7 +72,7 @@ enum AppSettings {
 
 /// App Store and support details used by Settings.
 enum AppInfo {
-    /// Apple ID of "Záruky – účtenky" in App Store Connect.
+    /// Apple ID of the app in App Store Connect (first named "Záruky – účtenky").
     static let appStoreID = "6839827530"
     static let appStoreURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)")!
     static let reviewURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")!
@@ -80,6 +81,9 @@ enum AppInfo {
     static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 
     /// Address for "Napsat nám" (contact). Left empty, the row is hidden.
+    /// The app name in the current language (App Store and home screen).
+    static var name: String { L("Hlídač záruk", "Warranty Guard", "Garantie-Wächter") }
+
     static let supportEmail = "petr.bouma@aurin.health"
 
     static var version: String {

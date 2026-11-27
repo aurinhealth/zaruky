@@ -1,6 +1,6 @@
 import Foundation
 
-/// Formatting for counts, dates and prices in the app language (Czech or English).
+/// Formatting for counts, dates and prices in the app language (Czech, English or German).
 enum AppFormat {
     /// Picks the Czech plural form: 1 den, 2–4 dny, 5+ dní.
     static func czechPlural(_ n: Int, one: String, few: String, many: String) -> String {
@@ -12,28 +12,32 @@ enum AppFormat {
 
     static func days(_ n: Int) -> String {
         if L10n.isEnglish { return n == 1 ? "1 day" : "\(n) days" }
+        if L10n.isGerman { return n == 1 ? "1 Tag" : "\(n) Tage" }
         return "\(n) " + czechPlural(n, one: "den", few: "dny", many: "dní")
     }
 
     static func months(_ n: Int) -> String {
         if L10n.isEnglish { return n == 1 ? "1 month" : "\(n) months" }
+        if L10n.isGerman { return n == 1 ? "1 Monat" : "\(n) Monate" }
         return "\(n) " + czechPlural(n, one: "měsíc", few: "měsíce", many: "měsíců")
     }
 
     static func years(_ n: Int) -> String {
         if L10n.isEnglish { return n == 1 ? "1 year" : "\(n) years" }
+        if L10n.isGerman { return n == 1 ? "1 Jahr" : "\(n) Jahre" }
         return "\(n) " + czechPlural(n, one: "rok", few: "roky", many: "let")
     }
 
     static func receipts(_ n: Int) -> String {
         if L10n.isEnglish { return n == 1 ? "1 receipt" : "\(n) receipts" }
+        if L10n.isGerman { return n == 1 ? "1 Beleg" : "\(n) Belege" }
         return "\(n) " + czechPlural(n, one: "účtenka", few: "účtenky", many: "účtenek")
     }
 
     /// Short badge text for remaining warranty, e.g. "12 dní", "8 months".
     static func remaining(days: Int) -> String {
-        if days < 0 { return L("Po záruce", "Expired") }
-        if days == 0 { return L("Končí dnes", "Ends today") }
+        if days < 0 { return L("Po záruce", "Expired", "Abgelaufen") }
+        if days == 0 { return L("Končí dnes", "Ends today", "Endet heute") }
         if days <= 60 { return AppFormat.days(days) }
         let months = days / 30
         if months < 24 { return AppFormat.months(months) }

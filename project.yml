@@ -22,9 +22,9 @@ targets:
     info:
       path: Zaruky/Info.plist
       properties:
-        CFBundleDisplayName: Záruky
+        CFBundleDisplayName: Hlídač záruk
         CFBundleDevelopmentRegion: cs
-        CFBundleLocalizations: [cs, en]
+        CFBundleLocalizations: [cs, en, de]
         UIBackgroundModes: [remote-notification]
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
@@ -73,9 +73,9 @@ targets:
     info:
       path: ZarukyWidgets/Info.plist
       properties:
-        CFBundleDisplayName: Záruky
+        CFBundleDisplayName: Hlídač záruk
         CFBundleDevelopmentRegion: cs
-        CFBundleLocalizations: [cs, en]
+        CFBundleLocalizations: [cs, en, de]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:

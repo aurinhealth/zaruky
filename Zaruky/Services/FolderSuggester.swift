@@ -43,15 +43,15 @@ enum FolderSuggester {
     private static let categories: [(symbols: [String], folderWords: [String])] = [
         (["iphone", "laptopcomputer", "desktopcomputer", "ipad", "applewatch", "headphones", "tv",
           "hifispeaker.fill", "camera.fill", "gamecontroller.fill", "printer.fill", "wifi.router.fill"],
-         ["elektro", "electronic", "technik", "tech", "počítač", "pocitac", "mobil", "gadget"]),
+         ["elektro", "electronic", "technik", "tech", "počítač", "pocitac", "mobil", "gadget", "computer", "handy"]),
         (["washer.fill", "dishwasher.fill", "refrigerator.fill", "oven.fill", "cup.and.saucer.fill", "fanblades.fill"],
-         ["domác", "domac", "home", "household", "spotřebič", "spotrebic", "kuchyň", "kuchyn", "appliance", "byt", "dům", "dum"]),
-        (["sofa.fill", "lightbulb.fill"], ["nábytek", "nabytek", "furniture", "domác", "domac", "home", "byt", "dům", "dum"]),
-        (["car.fill"], ["auto", "car", "vůz", "vuz"]),
-        (["bicycle"], ["kolo", "sport", "bike", "outdoor"]),
-        (["tshirt.fill"], ["oblečení", "obleceni", "móda", "moda", "clothes", "fashion", "boty"]),
-        (["hammer.fill"], ["nářadí", "naradi", "dílna", "dilna", "tools", "zahrad", "garden", "garáž", "garaz"]),
-        (["stroller.fill"], ["dět", "det", "kids", "baby", "miminko"]),
+         ["domác", "domac", "home", "household", "spotřebič", "spotrebic", "kuchyň", "kuchyn", "appliance", "byt", "dům", "dum", "haushalt", "küche", "kuche", "wohnung", "haus"]),
+        (["sofa.fill", "lightbulb.fill"], ["nábytek", "nabytek", "furniture", "domác", "domac", "home", "byt", "dům", "dum", "möbel", "mobel", "haushalt", "wohnung"]),
+        (["car.fill"], ["auto", "car", "vůz", "vuz", "fahrzeug", "wagen"]),
+        (["bicycle"], ["kolo", "sport", "bike", "outdoor", "fahrrad"]),
+        (["tshirt.fill"], ["oblečení", "obleceni", "móda", "moda", "clothes", "fashion", "boty", "kleidung", "mode", "schuhe"]),
+        (["hammer.fill"], ["nářadí", "naradi", "dílna", "dilna", "tools", "zahrad", "garden", "garáž", "garaz", "werkzeug", "werkstatt", "garten", "garage"]),
+        (["stroller.fill"], ["dět", "det", "kids", "baby", "miminko", "kinder", "kind"]),
     ]
 
     static func byKeywords(product: String, folders: [String]) -> String? {

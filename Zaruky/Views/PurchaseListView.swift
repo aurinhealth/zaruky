@@ -74,9 +74,9 @@ struct PurchaseListView: View {
 
     private var title: String {
         switch filter {
-        case .all: L("Záruky", "Warranties")
-        case .unfiled: L("Bez složky", "No folder")
-        case .folder: selectedFolder?.name ?? L("Záruky", "Warranties")
+        case .all: L("Záruky", "Warranties", "Garantien")
+        case .unfiled: L("Bez složky", "No folder", "Kein Ordner")
+        case .folder: selectedFolder?.name ?? L("Záruky", "Warranties", "Garantien")
         }
     }
 
@@ -99,7 +99,7 @@ struct PurchaseListView: View {
                     Button { showSettings = true } label: {
                         Image(systemName: "gearshape")
                     }
-                    .accessibilityLabel(L("Nastavení", "Settings"))
+                    .accessibilityLabel(L("Nastavení", "Settings", "Einstellungen"))
                 }
                 ToolbarItem(placement: .primaryAction) { addMenu }
             }
@@ -143,20 +143,19 @@ struct PurchaseListView: View {
             PurchaseFormView(purchase: nil, image: context.image, initialFolder: selectedFolder,
                              prefilledText: context.text,
                              queueNote: importQueue.isEmpty ? nil
-                                : L("Další účtenky čekají: \(importQueue.count)", "More receipts waiting: \(importQueue.count)"))
+                                : L("Další účtenky čekají: \(importQueue.count)", "More receipts waiting: \(importQueue.count)", "Weitere Belege warten: \(importQueue.count)"))
         }
-        .alert(L("Import ze Souborů", "Import from Files"),
+        .alert(L("Import ze Souborů", "Import from Files", "Aus Dateien importieren"),
                isPresented: Binding(get: { importNote != nil }, set: { if !$0 { importNote = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(importNote ?? "")
         }
-        .alert(L("Připomenout konec záruky?", "Remind you when the warranty ends?"), isPresented: $askReminders) {
-            Button(L("Připomínat", "Remind me")) { allowReminders() }
-            Button(L("Teď ne", "Not now"), role: .cancel) { declineReminders() }
+        .alert(L("Připomenout konec záruky?", "Remind you when the warranty ends?", "Vor Garantieende erinnern?"), isPresented: $askReminders) {
+            Button(L("Připomínat", "Remind me", "Erinnern")) { allowReminders() }
+            Button(L("Teď ne", "Not now", "Jetzt nicht"), role: .cancel) { declineReminders() }
         } message: {
-            Text(L("Ozvu se \(AppFormat.days(AppSettings.reminderDays)) předtím, než záruka skončí, ať stihneš případnou reklamaci.",
-                   "You'll hear from me \(AppFormat.days(AppSettings.reminderDays)) before a warranty ends, so there's time for a claim."))
+            Text(L("Ozvu se \(AppFormat.days(AppSettings.reminderDays)) předtím, než záruka skončí, ať stihneš případnou reklamaci.", "You'll hear from me \(AppFormat.days(AppSettings.reminderDays)) before a warranty ends, so there's time for a claim.", "Ich melde mich \(AppFormat.days(AppSettings.reminderDays)) vor Garantieende, damit noch Zeit für eine Reklamation ist."))
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(usedCount: purchases.count)
@@ -167,33 +166,31 @@ struct PurchaseListView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
-        .alert(editingFolder == nil ? L("Nová složka", "New folder") : L("Přejmenovat složku", "Rename folder"),
+        .alert(editingFolder == nil ? L("Nová složka", "New folder", "Neuer Ordner") : L("Přejmenovat složku", "Rename folder", "Ordner umbenennen"),
                isPresented: $showFolderEditor) {
-            TextField(L("Název složky", "Folder name"), text: $folderName)
-            Button(L("Uložit", "Save")) { saveFolder() }
-            Button(L("Zrušit", "Cancel"), role: .cancel) {}
+            TextField(L("Název složky", "Folder name", "Ordnername"), text: $folderName)
+            Button(L("Uložit", "Save", "Sichern")) { saveFolder() }
+            Button(L("Zrušit", "Cancel", "Abbrechen"), role: .cancel) {}
         } message: {
-            Text(L("Např. Elektronika, Domácnost, Auto", "E.g. Electronics, Home, Car"))
+            Text(L("Např. Elektronika, Domácnost, Auto", "E.g. Electronics, Home, Car", "Z. B. Elektronik, Haushalt, Auto"))
         }
         .confirmationDialog(
-            L("Smazat složku „\(folderToDelete?.name ?? "")“?", "Delete folder “\(folderToDelete?.name ?? "")”?"),
+            L("Smazat složku „\(folderToDelete?.name ?? "")“?", "Delete folder “\(folderToDelete?.name ?? "")”?", "Ordner „\(folderToDelete?.name ?? "")“ löschen?"),
             isPresented: Binding(get: { folderToDelete != nil }, set: { if !$0 { folderToDelete = nil } }),
             titleVisibility: .visible
         ) {
-            Button(L("Smazat složku", "Delete folder"), role: .destructive) { deleteFolder() }
+            Button(L("Smazat složku", "Delete folder", "Ordner löschen"), role: .destructive) { deleteFolder() }
         } message: {
-            Text(L("Účtenky ve složce zůstanou, jen budou bez složky.",
-                   "Receipts in the folder are kept, they just won't be in a folder."))
+            Text(L("Účtenky ve složce zůstanou, jen budou bez složky.", "Receipts in the folder are kept, they just won't be in a folder.", "Die Belege im Ordner bleiben erhalten, nur eben ohne Ordner."))
         }
         .alert(
-            L("Smazat účtenku?", "Delete receipt?"),
+            L("Smazat účtenku?", "Delete receipt?", "Beleg löschen?"),
             isPresented: Binding(get: { purchaseToDelete != nil }, set: { if !$0 { purchaseToDelete = nil } })
         ) {
-            Button(L("Zrušit", "Cancel"), role: .cancel) { purchaseToDelete = nil }
-            Button(L("Smazat", "Delete"), role: .destructive) { deletePurchase() }
+            Button(L("Zrušit", "Cancel", "Abbrechen"), role: .cancel) { purchaseToDelete = nil }
+            Button(L("Smazat", "Delete", "Löschen"), role: .destructive) { deletePurchase() }
         } message: {
-            Text(L("Účtenka i připomínka zmizí ze všech tvých zařízení.",
-                   "The receipt and its reminder are removed from all your devices."))
+            Text(L("Účtenka i připomínka zmizí ze všech tvých zařízení.", "The receipt and its reminder are removed from all your devices.", "Der Beleg und seine Erinnerung werden von allen deinen Geräten entfernt."))
         }
         .task(id: purchases.count) { await NotificationService.sync(with: purchases) }
         .onChange(of: widgetSignature, initial: true) { _, _ in WidgetBridge.update(with: purchases) }
@@ -262,7 +259,7 @@ struct PurchaseListView: View {
             .animation(.snappy, value: filter)
             .animation(.snappy, value: showExpired)
         }
-        .searchable(text: $searchText, prompt: L("Hledat produkt nebo obchod", "Search product or store"))
+        .searchable(text: $searchText, prompt: L("Hledat produkt nebo obchod", "Search product or store", "Produkt oder Geschäft suchen"))
         .searchToolbarBehavior(.minimize)
         .toolbar {
             DefaultToolbarItem(kind: .search, placement: .bottomBar)
@@ -283,7 +280,7 @@ struct PurchaseListView: View {
                 Button {
                     showExpired.toggle()
                 } label: {
-                    Text(showExpired ? L("Skrýt", "Hide") : L("Zobrazit", "Show"))
+                    Text(showExpired ? L("Skrýt", "Hide", "Ausblenden") : L("Zobrazit", "Show", "Einblenden"))
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(.rect)
                 }
@@ -300,7 +297,7 @@ struct PurchaseListView: View {
         Button { start(.scan) } label: {
             HStack(spacing: 8) {
                 Image(systemName: "doc.viewfinder")
-                Text(L("Naskenovat účtenku", "Scan a receipt"))
+                Text(L("Naskenovat účtenku", "Scan a receipt", "Beleg scannen"))
             }
             .font(.headline)
             .padding(.horizontal, 8)
@@ -308,7 +305,7 @@ struct PurchaseListView: View {
         .buttonStyle(.glassProminent)
         // Toolbar items don't inherit the app tint, so name the asset colour directly.
         .tint(Color("AccentColor"))
-        .accessibilityLabel(L("Naskenovat účtenku", "Scan a receipt"))
+        .accessibilityLabel(L("Naskenovat účtenku", "Scan a receipt", "Beleg scannen"))
     }
 
     @ViewBuilder
@@ -317,10 +314,9 @@ struct PurchaseListView: View {
             ContentUnavailableView.search(text: searchText)
         } else {
             ContentUnavailableView {
-                Label(L("Složka je prázdná", "This folder is empty"), systemImage: "folder")
+                Label(L("Složka je prázdná", "This folder is empty", "Dieser Ordner ist leer"), systemImage: "folder")
             } description: {
-                Text(L("Naskenuj sem účtenku, nebo sem nějakou přesuň podržením prstu na kartě.",
-                       "Scan a receipt into it, or move one here by long-pressing its card."))
+                Text(L("Naskenuj sem účtenku, nebo sem nějakou přesuň podržením prstu na kartě.", "Scan a receipt into it, or move one here by long-pressing its card.", "Scanne einen Beleg hinein oder verschiebe einen hierher, indem du seine Karte lange drückst."))
             }
         }
     }
@@ -332,9 +328,9 @@ struct PurchaseListView: View {
                 move(purchase, to: nil)
             } label: {
                 if purchase.folder == nil {
-                    Label(L("Bez složky", "No folder"), systemImage: "checkmark")
+                    Label(L("Bez složky", "No folder", "Kein Ordner"), systemImage: "checkmark")
                 } else {
-                    Text(L("Bez složky", "No folder"))
+                    Text(L("Bez složky", "No folder", "Kein Ordner"))
                 }
             }
             ForEach(folders) { folder in
@@ -352,31 +348,31 @@ struct PurchaseListView: View {
             Button {
                 startNewFolder()
             } label: {
-                Label(L("Nová složka", "New folder"), systemImage: "folder.badge.plus")
+                Label(L("Nová složka", "New folder", "Neuer Ordner"), systemImage: "folder.badge.plus")
             }
         } label: {
-            Label(L("Přesunout do složky", "Move to folder"), systemImage: "folder")
+            Label(L("Přesunout do složky", "Move to folder", "In Ordner verschieben"), systemImage: "folder")
         }
         Divider()
         Button(role: .destructive) {
             purchaseToDelete = purchase
         } label: {
-            Label(L("Smazat", "Delete"), systemImage: "trash")
+            Label(L("Smazat", "Delete", "Löschen"), systemImage: "trash")
         }
     }
 
     private var addMenu: some View {
         Menu {
-            Button { start(.scan) } label: { Label(L("Naskenovat", "Scan"), systemImage: "doc.viewfinder") }
-            Button { start(.photo) } label: { Label(L("Vybrat z Fotek", "Choose from Photos"), systemImage: "photo") }
-            Button { start(.files) } label: { Label(L("Nahrát ze Souborů", "Import from Files"), systemImage: "folder") }
-            Button { start(.manual) } label: { Label(L("Zadat ručně", "Enter manually"), systemImage: "square.and.pencil") }
+            Button { start(.scan) } label: { Label(L("Naskenovat", "Scan", "Scannen"), systemImage: "doc.viewfinder") }
+            Button { start(.photo) } label: { Label(L("Vybrat z Fotek", "Choose from Photos", "Aus Fotos wählen"), systemImage: "photo") }
+            Button { start(.files) } label: { Label(L("Nahrát ze Souborů", "Import from Files", "Aus Dateien importieren"), systemImage: "folder") }
+            Button { start(.manual) } label: { Label(L("Zadat ručně", "Enter manually", "Manuell eingeben"), systemImage: "square.and.pencil") }
             Divider()
-            Button { startNewFolder() } label: { Label(L("Nová složka", "New folder"), systemImage: "folder.badge.plus") }
+            Button { startNewFolder() } label: { Label(L("Nová složka", "New folder", "Neuer Ordner"), systemImage: "folder.badge.plus") }
         } label: {
             Image(systemName: "plus")
         }
-        .accessibilityLabel(L("Přidat", "Add"))
+        .accessibilityLabel(L("Přidat", "Add", "Hinzufügen"))
     }
 
     private enum AddSource { case scan, photo, files, manual }
@@ -415,11 +411,10 @@ struct PurchaseListView: View {
 
         var notes: [String] = []
         if failed > 0 {
-            notes.append(L("\(AppFormat.receipts(failed)) se nepodařilo otevřít.", "Couldn't open \(AppFormat.receipts(failed))."))
+            notes.append(L("\(AppFormat.receipts(failed)) se nepodařilo otevřít.", "Couldn't open \(AppFormat.receipts(failed)).", "\(AppFormat.receipts(failed)) ließen sich nicht öffnen."))
         }
         if overLimit > 0 {
-            notes.append(L("\(AppFormat.receipts(overLimit)) se nevešlo do verze zdarma.",
-                           "\(AppFormat.receipts(overLimit)) didn't fit in the free version."))
+            notes.append(L("\(AppFormat.receipts(overLimit)) se nevešlo do verze zdarma.", "\(AppFormat.receipts(overLimit)) didn't fit in the free version.", "\(AppFormat.receipts(overLimit)) passten nicht mehr in die Gratisversion."))
         }
 
         guard !accepted.isEmpty else {
@@ -564,7 +559,7 @@ struct SummaryCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(L("Pod zárukou máš", "Under warranty"))
+                Text(L("Pod zárukou máš", "Under warranty", "Mit Garantie"))
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.white)
                 Text(AppFormat.price(protectedValue, currency: currency))
@@ -577,8 +572,8 @@ struct SummaryCard: View {
             }
 
             HStack(spacing: 10) {
-                pill(value: active.count, label: L("platných", "active"), symbol: "checkmark.shield.fill")
-                pill(value: soon.count, label: L("brzy končí", "ending soon"),
+                pill(value: active.count, label: L("platných", "active", "aktiv"), symbol: "checkmark.shield.fill")
+                pill(value: soon.count, label: L("brzy končí", "ending soon", "enden bald"),
                      symbol: "exclamationmark.circle.fill", highlight: !soon.isEmpty)
             }
         }
@@ -631,7 +626,7 @@ struct PurchaseCard: View {
             HStack(spacing: 12) {
                 ProductTile(name: purchase.productName, status: status)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(purchase.productName.isEmpty ? L("Bez názvu", "Untitled") : purchase.productName)
+                    Text(purchase.productName.isEmpty ? L("Bez názvu", "Untitled", "Ohne Namen") : purchase.productName)
                         .font(.headline)
                         .foregroundStyle(status == .expired ? .secondary : .primary)
                         .lineLimit(1)
@@ -660,7 +655,7 @@ struct PurchaseCard: View {
         .card()
         .contentShape(.rect(cornerRadius: Theme.cardRadius))
         .accessibilityElement(children: .combine)
-        .accessibilityHint(L("Otevře detail účtenky", "Opens the receipt"))
+        .accessibilityHint(L("Otevře detail účtenky", "Opens the receipt", "Öffnet den Beleg"))
     }
 
     private var subtitle: String {
@@ -709,8 +704,8 @@ struct FreeLimitCard: View {
                     .background(Theme.amber.opacity(0.15), in: .rect(cornerRadius: Theme.tileRadius, style: .continuous))
                 VStack(alignment: .leading, spacing: 6) {
                     Text(left > 0
-                         ? L("Zdarma ještě \(AppFormat.receipts(left))", "\(AppFormat.receipts(left)) left for free")
-                         : L("Využil jsi všech \(total) účtenek zdarma", "You've used all \(total) free receipts"))
+                         ? L("Zdarma ještě \(AppFormat.receipts(left))", "\(AppFormat.receipts(left)) left for free", "Noch \(AppFormat.receipts(left)) gratis")
+                         : L("Využil jsi všech \(total) účtenek zdarma", "You've used all \(total) free receipts", "Alle \(total) Gratis-Belege sind aufgebraucht"))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                     HStack(spacing: 4) {
@@ -722,7 +717,7 @@ struct FreeLimitCard: View {
                     }
                 }
                 Spacer(minLength: 4)
-                Text(L("Odemknout", "Unlock"))
+                Text(L("Odemknout", "Unlock", "Freischalten"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.brand)
             }
@@ -749,20 +744,20 @@ struct FolderBar: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                chip(L("Vše", "All"), count: purchases.count, icon: "square.stack.fill", filter: .all)
+                chip(L("Vše", "All", "Alle"), count: purchases.count, icon: "square.stack.fill", filter: .all)
                 ForEach(folders) { folder in
                     chip(folder.name, count: folder.purchaseCount, icon: "folder.fill", filter: .folder(folder.id))
                         .contextMenu {
                             Button { onRename(folder) } label: {
-                                Label(L("Přejmenovat", "Rename"), systemImage: "pencil")
+                                Label(L("Přejmenovat", "Rename", "Umbenennen"), systemImage: "pencil")
                             }
                             Button(role: .destructive) { onDelete(folder) } label: {
-                                Label(L("Smazat složku", "Delete folder"), systemImage: "trash")
+                                Label(L("Smazat složku", "Delete folder", "Ordner löschen"), systemImage: "trash")
                             }
                         }
                 }
                 if !folders.isEmpty && unfiledCount > 0 {
-                    chip(L("Bez složky", "No folder"), count: unfiledCount, icon: "tray.fill", filter: .unfiled)
+                    chip(L("Bez složky", "No folder", "Kein Ordner"), count: unfiledCount, icon: "tray.fill", filter: .unfiled)
                 }
                 Button(action: onNew) {
                     Image(systemName: "folder.badge.plus")
@@ -774,7 +769,7 @@ struct FolderBar: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .accessibilityLabel(L("Nová složka", "New folder"))
+                .accessibilityLabel(L("Nová složka", "New folder", "Neuer Ordner"))
             }
             .padding(.horizontal, Theme.pagePadding)
             .padding(.vertical, 8)
@@ -822,10 +817,8 @@ struct SyncStatusFooter: View {
     var body: some View {
         Label(
             iCloudAvailable
-                ? L("Zálohováno v iCloudu, synchronizuje se mezi tvými zařízeními.",
-                    "Backed up to iCloud and synced across your devices.")
-                : L("iCloud není zapnutý, účtenky jsou jen v tomto telefonu. Zapni iCloud v Nastavení.",
-                    "iCloud is off, so receipts are only on this phone. Turn on iCloud in Settings."),
+                ? L("Zálohováno v iCloudu, synchronizuje se mezi tvými zařízeními.", "Backed up to iCloud and synced across your devices.", "In iCloud gesichert und auf deinen Geräten synchronisiert.")
+                : L("iCloud není zapnutý, účtenky jsou jen v tomto telefonu. Zapni iCloud v Nastavení.", "iCloud is off, so receipts are only on this phone. Turn on iCloud in Settings.", "iCloud ist aus, die Belege sind also nur auf diesem iPhone. Schalte iCloud in den Einstellungen ein."),
             systemImage: iCloudAvailable ? "checkmark.icloud" : "icloud.slash"
         )
         .font(.footnote)
@@ -852,11 +845,10 @@ struct WelcomeView: View {
                     .padding(.top, 12)
 
                 VStack(spacing: 8) {
-                    Text(L("Účtenky, které neztratíš", "Receipts you won't lose"))
+                    Text(L("Účtenky, které neztratíš", "Receipts you won't lose", "Belege, die du nicht verlierst"))
                         .font(.title.bold())
                         .multilineTextAlignment(.center)
-                    Text(L("Vyfoť účtenku a appka ohlídá záruku za tebe. Když se něco rozbije, doklad máš hned po ruce.",
-                           "Snap a receipt and the app keeps an eye on the warranty. When something breaks, the proof is right there."))
+                    Text(L("Vyfoť účtenku a appka ohlídá záruku za tebe. Když se něco rozbije, doklad máš hned po ruce.", "Snap a receipt and the app keeps an eye on the warranty. When something breaks, the proof is right there.", "Fotografiere den Beleg und die App behält die Garantie im Blick. Geht etwas kaputt, ist der Nachweis sofort da."))
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -864,22 +856,20 @@ struct WelcomeView: View {
                 .padding(.horizontal, 8)
 
                 VStack(spacing: 0) {
-                    step(1, symbol: "doc.viewfinder", title: L("Naskenuj účtenku", "Scan the receipt"),
-                         text: L("Stačí ji vyfotit, ořízne se sama.", "Just take a photo, it crops itself."))
+                    step(1, symbol: "doc.viewfinder", title: L("Naskenuj účtenku", "Scan the receipt", "Beleg scannen"),
+                         text: L("Stačí ji vyfotit, ořízne se sama.", "Just take a photo, it crops itself.", "Einfach fotografieren, der Zuschnitt passiert von selbst."))
                     Divider().padding(.leading, 64)
-                    step(2, symbol: "wand.and.sparkles", title: L("Údaje se vyplní samy", "Details fill themselves in"),
-                         text: L("Produkt, obchod, datum i cenu přečte AI přímo v telefonu.",
-                                 "On-device AI reads the product, store, date and price."))
+                    step(2, symbol: "wand.and.sparkles", title: L("Údaje se vyplní samy", "Details fill themselves in", "Angaben füllen sich selbst aus"),
+                         text: L("Produkt, obchod, datum i cenu přečte AI přímo v telefonu.", "On-device AI reads the product, store, date and price.", "Die KI auf dem Gerät liest Produkt, Geschäft, Datum und Preis."))
                     Divider().padding(.leading, 64)
-                    step(3, symbol: "bell.badge.fill", title: L("Připomeneme se včas", "We remind you in time"),
-                         text: L("\(AppFormat.days(AppSettings.reminderDays)) předem víš, že záruka končí.",
-                                 "You hear from us \(AppFormat.days(AppSettings.reminderDays)) before it ends."))
+                    step(3, symbol: "bell.badge.fill", title: L("Připomeneme se včas", "We remind you in time", "Wir erinnern dich rechtzeitig"),
+                         text: L("\(AppFormat.days(AppSettings.reminderDays)) předem víš, že záruka končí.", "You hear from us \(AppFormat.days(AppSettings.reminderDays)) before it ends.", "Du hörst \(AppFormat.days(AppSettings.reminderDays)) vor dem Ende von uns."))
                 }
                 .card()
 
                 VStack(spacing: 12) {
                     Button(action: onScan) {
-                        Label(L("Naskenovat první účtenku", "Scan your first receipt"), systemImage: "doc.viewfinder")
+                        Label(L("Naskenovat první účtenku", "Scan your first receipt", "Ersten Beleg scannen"), systemImage: "doc.viewfinder")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 6)
@@ -888,9 +878,9 @@ struct WelcomeView: View {
                     .controlSize(.large)
 
                     HStack(spacing: 10) {
-                        sourceButton(L("Z Fotek", "Photos"), symbol: "photo", action: onPhoto)
-                        sourceButton(L("Ze Souborů", "Files"), symbol: "folder", action: onFiles)
-                        sourceButton(L("Ručně", "Manually"), symbol: "square.and.pencil", action: onManual)
+                        sourceButton(L("Z Fotek", "Photos", "Fotos"), symbol: "photo", action: onPhoto)
+                        sourceButton(L("Ze Souborů", "Files", "Dateien"), symbol: "folder", action: onFiles)
+                        sourceButton(L("Ručně", "Manually", "Manuell"), symbol: "square.and.pencil", action: onManual)
                     }
                     .buttonStyle(.glass)
                     .controlSize(.large)

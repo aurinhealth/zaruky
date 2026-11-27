@@ -47,34 +47,34 @@ extension View {
 }
 
 /// Guesses a fitting SF Symbol for a product from its name, so every receipt gets a
-/// recognisable picture without the user doing anything. Czech and English keywords.
+/// recognisable picture without the user doing anything. Czech, English and German keywords.
 enum ProductIcon {
     private static let table: [(String, [String])] = [
-        ("iphone", ["iphone", "telefon", "mobil", "phone", "galaxy", "pixel", "xiaomi", "smartphone"]),
+        ("iphone", ["iphone", "telefon", "mobil", "phone", "galaxy", "pixel", "xiaomi", "smartphone", "handy"]),
         ("laptopcomputer", ["macbook", "notebook", "laptop", "thinkpad", "chromebook"]),
         ("desktopcomputer", ["imac", "počítač", "pocitac", "computer", "pc ", "monitor"]),
         ("ipad", ["ipad", "tablet"]),
         ("applewatch", ["watch", "hodinky"]),
-        ("headphones", ["sluchátk", "sluchatk", "airpods", "headphone", "earbuds", "buds", "wh-1000", "wf-1000", "bose", "jbl"]),
-        ("tv", ["televiz", "tv", "oled", "qled"]),
-        ("hifispeaker.fill", ["reprodukt", "speaker", "soundbar", "repro"]),
+        ("headphones", ["sluchátk", "sluchatk", "airpods", "headphone", "earbuds", "buds", "wh-1000", "wf-1000", "bose", "jbl", "kopfhörer", "kopfhorer"]),
+        ("tv", ["televiz", "tv", "oled", "qled", "fernseh"]),
+        ("hifispeaker.fill", ["reprodukt", "speaker", "soundbar", "repro", "lautsprecher"]),
         ("camera.fill", ["fotoaparát", "fotoaparat", "camera", "kamera", "gopro", "objektiv"]),
-        ("gamecontroller.fill", ["playstation", "xbox", "nintendo", "switch", "konzole", "ps5", "gamepad"]),
-        ("washer.fill", ["pračk", "prack", "washer", "washing"]),
-        ("dishwasher.fill", ["myčk", "myck", "dishwasher"]),
-        ("refrigerator.fill", ["lednic", "chladni", "fridge", "refrigerator", "mrazák", "mrazak"]),
-        ("oven.fill", ["trouba", "sporák", "sporak", "oven", "mikrovl", "microwave"]),
-        ("cup.and.saucer.fill", ["kávovar", "kavovar", "espresso", "coffee", "nespresso", "delonghi"]),
-        ("fanblades.fill", ["vysavač", "vysavac", "vacuum", "dyson", "roomba"]),
-        ("bicycle", ["kolo", "bike", "bicycle", "koloběž", "kolobez", "scooter"]),
-        ("car.fill", ["auto", "pneu", "car ", "tyre", "tire"]),
-        ("sofa.fill", ["gauč", "gauc", "sedačk", "sedack", "sofa", "nábytek", "nabytek", "postel", "matrace", "ikea"]),
-        ("tshirt.fill", ["bunda", "boty", "tričk", "trick", "oblečen", "obleceni", "jacket", "shoes", "sneakers"]),
-        ("hammer.fill", ["vrtačk", "vrtack", "drill", "nářad", "narad", "bosch", "makita", "šroubov", "sroubov"]),
-        ("printer.fill", ["tiskárn", "tiskarn", "printer"]),
+        ("gamecontroller.fill", ["playstation", "xbox", "nintendo", "switch", "konzole", "ps5", "gamepad", "konsole"]),
+        ("washer.fill", ["pračk", "prack", "washer", "washing", "waschmasch", "trockner"]),
+        ("dishwasher.fill", ["myčk", "myck", "dishwasher", "spülmasch", "spulmasch", "geschirrsp"]),
+        ("refrigerator.fill", ["lednic", "chladni", "fridge", "refrigerator", "mrazák", "mrazak", "kühlschrank", "kuhlschrank", "gefrier"]),
+        ("oven.fill", ["trouba", "sporák", "sporak", "oven", "mikrovl", "microwave", "backofen", "herd", "mikrowelle"]),
+        ("cup.and.saucer.fill", ["kávovar", "kavovar", "espresso", "coffee", "nespresso", "delonghi", "kaffee"]),
+        ("fanblades.fill", ["vysavač", "vysavac", "vacuum", "dyson", "roomba", "staubsauger", "sauger"]),
+        ("bicycle", ["kolo", "bike", "bicycle", "koloběž", "kolobez", "scooter", "fahrrad", "e-bike", "roller"]),
+        ("car.fill", ["auto", "pneu", "car ", "tyre", "tire", "reifen"]),
+        ("sofa.fill", ["gauč", "gauc", "sedačk", "sedack", "sofa", "nábytek", "nabytek", "postel", "matrace", "ikea", "couch", "bett", "matratze", "möbel"]),
+        ("tshirt.fill", ["bunda", "boty", "tričk", "trick", "oblečen", "obleceni", "jacket", "shoes", "sneakers", "jacke", "schuhe"]),
+        ("hammer.fill", ["vrtačk", "vrtack", "drill", "nářad", "narad", "bosch", "makita", "šroubov", "sroubov", "bohrer", "bohrmasch", "akkuschrauber", "werkzeug"]),
+        ("printer.fill", ["tiskárn", "tiskarn", "printer", "drucker"]),
         ("wifi.router.fill", ["router", "wifi", "mesh"]),
-        ("lightbulb.fill", ["lampa", "světlo", "svetlo", "lamp", "light", "hue"]),
-        ("stroller.fill", ["kočár", "kocar", "stroller", "autosedačk"]),
+        ("lightbulb.fill", ["lampa", "světlo", "svetlo", "lamp", "light", "hue", "leuchte"]),
+        ("stroller.fill", ["kočár", "kocar", "stroller", "autosedačk", "kinderwagen"]),
     ]
 
     static func symbol(for name: String) -> String {

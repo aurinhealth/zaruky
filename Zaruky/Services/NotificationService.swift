@@ -30,12 +30,11 @@ enum NotificationService {
         guard let fireDate = cal.date(from: comps), fireDate > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        let name = purchase.productName.isEmpty ? L("Nákup", "Purchase") : purchase.productName
+        let name = purchase.productName.isEmpty ? L("Nákup", "Purchase", "Kauf") : purchase.productName
         let days = AppFormat.days(daysBefore)
         let end = AppFormat.date(purchase.warrantyEndDate)
-        content.title = L("Záruka brzy končí", "Warranty ending soon")
-        content.body = L("\(name): záruka skončí za \(days), \(end).",
-                         "\(name): the warranty ends in \(days), on \(end).")
+        content.title = L("Záruka brzy končí", "Warranty ending soon", "Garantie endet bald")
+        content.body = L("\(name): záruka skončí za \(days), \(end).", "\(name): the warranty ends in \(days), on \(end).", "\(name): Die Garantie endet in \(days), am \(end).")
         content.sound = .default
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
