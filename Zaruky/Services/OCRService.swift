@@ -31,6 +31,7 @@ enum OCRService {
         }
         return picked.isEmpty ? ["en-US"] : picked
     }
+}
 
 extension CGImagePropertyOrientation {
     init(_ orientation: UIImage.Orientation) {
