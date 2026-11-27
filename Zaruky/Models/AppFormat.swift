@@ -47,7 +47,8 @@ enum AppFormat {
 
     static func price(_ value: Double?, currency: String = "CZK") -> String {
         guard let value else { return "—" }
-        return value.formatted(.currency(code: currency).locale(L10n.locale))
+        let whole = value.rounded() == value
+        return value.formatted(.currency(code: currency).precision(.fractionLength(whole ? 0 : 2)).locale(L10n.locale))
     }
 
     static func date(_ date: Date) -> String {

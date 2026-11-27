@@ -42,6 +42,7 @@ struct PaywallView: View {
             }
             .background(Color(.systemGroupedBackground))
             .safeAreaBar(edge: .bottom) { purchaseBar }
+            .scrollEdgeEffectStyle(.hard, for: .bottom)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .close) { dismiss() }

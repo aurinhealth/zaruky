@@ -55,7 +55,7 @@ enum ProductIcon {
         ("desktopcomputer", ["imac", "počítač", "pocitac", "computer", "pc ", "monitor"]),
         ("ipad", ["ipad", "tablet"]),
         ("applewatch", ["watch", "hodinky"]),
-        ("headphones", ["sluchátk", "sluchatk", "airpods", "headphone", "earbuds", "buds"]),
+        ("headphones", ["sluchátk", "sluchatk", "airpods", "headphone", "earbuds", "buds", "wh-1000", "wf-1000", "bose", "jbl"]),
         ("tv", ["televiz", "tv", "oled", "qled"]),
         ("hifispeaker.fill", ["reprodukt", "speaker", "soundbar", "repro"]),
         ("camera.fill", ["fotoaparát", "fotoaparat", "camera", "kamera", "gopro", "objektiv"]),

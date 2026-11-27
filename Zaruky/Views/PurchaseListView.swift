@@ -151,6 +151,16 @@ struct PurchaseListView: View {
     private var content: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
+                FolderBar(
+                    folders: folders,
+                    purchases: purchases,
+                    selection: $filter,
+                    onNew: { startNewFolder() },
+                    onRename: { startRename($0) },
+                    onDelete: { folderToDelete = $0 }
+                )
+                .padding(.horizontal, -Theme.pagePadding)
+
                 if filter == .all && !isSearching && !purchases.isEmpty {
                     SummaryCard(purchases: purchases)
                         .padding(.bottom, 8)
@@ -191,20 +201,11 @@ struct PurchaseListView: View {
             .animation(.snappy, value: showExpired)
         }
         .searchable(text: $searchText, prompt: L("Hledat produkt nebo obchod", "Search product or store"))
-        .safeAreaBar(edge: .top, spacing: 0) {
-            FolderBar(
-                folders: folders,
-                purchases: purchases,
-                selection: $filter,
-                onNew: { startNewFolder() },
-                onRename: { startRename($0) },
-                onDelete: { folderToDelete = $0 }
-            )
-        }
-        .safeAreaBar(edge: .bottom) {
-            scanButton
-                .padding(.horizontal, 24)
-                .padding(.bottom, 4)
+        .searchToolbarBehavior(.minimize)
+        .toolbar {
+            DefaultToolbarItem(kind: .search, placement: .bottomBar)
+            ToolbarSpacer(.flexible, placement: .bottomBar)
+            ToolbarItem(placement: .bottomBar) { scanButton }
         }
     }
 
@@ -233,12 +234,10 @@ struct PurchaseListView: View {
         Button { start(.scan) } label: {
             Label(L("Naskenovat účtenku", "Scan a receipt"), systemImage: "doc.viewfinder")
                 .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
+                .labelStyle(.titleAndIcon)
+                .padding(.horizontal, 6)
         }
         .buttonStyle(.glassProminent)
-        .buttonBorderShape(.capsule)
-        .controlSize(.large)
     }
 
     @ViewBuilder
