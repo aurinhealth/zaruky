@@ -240,7 +240,8 @@ struct PurchaseListView: View {
             .padding(.horizontal, 8)
         }
         .buttonStyle(.glassProminent)
-        .tint(Theme.brand)
+        // Toolbar items don't inherit the app tint, so name the asset colour directly.
+        .tint(Color("AccentColor"))
         .accessibilityLabel(L("Naskenovat účtenku", "Scan a receipt"))
     }
 
