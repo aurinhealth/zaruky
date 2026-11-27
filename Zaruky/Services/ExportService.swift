@@ -20,7 +20,7 @@ struct ExportItem: Sendable {
 
     @MainActor
     init(_ purchase: Purchase) {
-        productName = purchase.productName.isEmpty ? L("Bez názvu", "Untitled") : purchase.productName
+        productName = purchase.productName.isEmpty ? L("Bez názvu", "Untitled", "Ohne Namen") : purchase.productName
         storeName = purchase.storeName
         folderName = purchase.folder?.name ?? ""
         purchaseDate = purchase.purchaseDate
@@ -66,7 +66,7 @@ enum ExportService {
         return dir
     }
 
-    private static var baseName: String { L("Zaruky-", "Warranties-") + stamp }
+    private static var baseName: String { L("Zaruky-", "Warranties-", "Garantien-") + stamp }
 
     static func makePDF(_ items: [ExportItem]) throws -> URL {
         let url = try freshDirectory().appendingPathComponent(baseName + ".pdf")
@@ -78,7 +78,7 @@ enum ExportService {
         let fm = FileManager.default
         let work = try freshDirectory()
         let folder = work.appendingPathComponent(baseName, isDirectory: true)
-        let photos = folder.appendingPathComponent(L("fotky", "photos"), isDirectory: true)
+        let photos = folder.appendingPathComponent(L("fotky", "photos", "fotos"), isDirectory: true)
         try fm.createDirectory(at: photos, withIntermediateDirectories: true)
 
         var photoNames: [String?] = []
@@ -96,8 +96,8 @@ enum ExportService {
                 try attachment.data.write(to: photos.appendingPathComponent(name))
             }
         }
-        try csv(items, photoNames: photoNames).write(to: folder.appendingPathComponent(L("uctenky.csv", "receipts.csv")))
-        try pdfData(items).write(to: folder.appendingPathComponent(L("prehled.pdf", "overview.pdf")))
+        try csv(items, photoNames: photoNames).write(to: folder.appendingPathComponent(L("uctenky.csv", "receipts.csv", "belege.csv")))
+        try pdfData(items).write(to: folder.appendingPathComponent(L("prehled.pdf", "overview.pdf", "uebersicht.pdf")))
 
         // The system zips a folder when it is read "for uploading"; copy the zip out before it's cleaned up.
         let destination = work.appendingPathComponent(baseName + ".zip")
@@ -137,11 +137,10 @@ enum ExportService {
             return L10n.isEnglish ? text : text.replacingOccurrences(of: ".", with: ",")
         }
 
-        let header = L("Produkt;Obchod;Složka;Datum nákupu;Záruka (měsíce);Konec záruky;Stav;Cena;Měna;Sériové číslo;Poznámka;Fotka",
-                       "Product;Store;Folder;Purchase date;Warranty (months);Warranty ends;Status;Price;Currency;Serial number;Note;Photo")
+        let header = L("Produkt;Obchod;Složka;Datum nákupu;Záruka (měsíce);Konec záruky;Stav;Cena;Měna;Sériové číslo;Poznámka;Fotka", "Product;Store;Folder;Purchase date;Warranty (months);Warranty ends;Status;Price;Currency;Serial number;Note;Photo", "Produkt;Geschäft;Ordner;Kaufdatum;Garantie (Monate);Garantie endet;Status;Preis;Währung;Seriennummer;Notiz;Foto")
         var lines = [header]
         for (index, item) in items.enumerated() {
-            let photo = index < photoNames.count ? photoNames[index].map { L("fotky/", "photos/") + $0 } ?? "" : ""
+            let photo = index < photoNames.count ? photoNames[index].map { L("fotky/", "photos/", "fotos/") + $0 } ?? "" : ""
             lines.append([
                 field(item.productName), field(item.storeName), field(item.folderName),
                 iso.string(from: item.purchaseDate), String(item.warrantyMonths), iso.string(from: item.warrantyEndDate),
@@ -171,8 +170,8 @@ enum ExportService {
 
         // Column x offsets and widths: product+store, bought, warranty until, status, price.
         let columns: [(String, CGFloat)] = [
-            (L("PRODUKT", "PRODUCT"), 0.36), (L("KOUPENO", "BOUGHT"), 0.15), (L("ZÁRUKA DO", "WARRANTY UNTIL"), 0.17),
-            (L("STAV", "STATUS"), 0.15), (L("CENA", "PRICE"), 0.17),
+            (L("PRODUKT", "PRODUCT", "PRODUKT"), 0.36), (L("KOUPENO", "BOUGHT", "GEKAUFT"), 0.15), (L("ZÁRUKA DO", "WARRANTY UNTIL", "GARANTIE BIS"), 0.17),
+            (L("STAV", "STATUS", "STATUS"), 0.15), (L("CENA", "PRICE", "PREIS"), 0.17),
         ]
         func columnRects(y: CGFloat, height: CGFloat) -> [CGRect] {
             var x = margin
@@ -189,11 +188,10 @@ enum ExportService {
                 context.beginPage()
                 y = margin
                 if first {
-                    NSAttributedString(string: L("Záruky – přehled účtenek", "Warranties – receipt overview"), attributes: title)
+                    NSAttributedString(string: L("Záruky – přehled účtenek", "Warranties – receipt overview", "Garantien – Belegübersicht"), attributes: title)
                         .draw(at: CGPoint(x: margin, y: y))
                     y += 34
-                    NSAttributedString(string: L("Vytvořeno \(AppFormat.date(Date())) · \(AppFormat.receipts(items.count))",
-                                                 "Created \(AppFormat.date(Date())) · \(AppFormat.receipts(items.count))"),
+                    NSAttributedString(string: L("Vytvořeno \(AppFormat.date(Date())) · \(AppFormat.receipts(items.count))", "Created \(AppFormat.date(Date())) · \(AppFormat.receipts(items.count))", "Erstellt am \(AppFormat.date(Date())) · \(AppFormat.receipts(items.count))"),
                                        attributes: subtitle)
                         .draw(at: CGPoint(x: margin, y: y))
                     y += 30
@@ -238,10 +236,10 @@ enum ExportService {
                     NSAttributedString(string: heading, attributes: title).draw(in: CGRect(x: margin, y: top, width: width, height: 32))
                     top += 34
                     let details = [item.storeName,
-                                   L("koupeno \(AppFormat.date(item.purchaseDate))", "bought \(AppFormat.date(item.purchaseDate))"),
-                                   L("záruka do \(AppFormat.date(item.warrantyEndDate))", "warranty until \(AppFormat.date(item.warrantyEndDate))"),
+                                   L("koupeno \(AppFormat.date(item.purchaseDate))", "bought \(AppFormat.date(item.purchaseDate))", "gekauft \(AppFormat.date(item.purchaseDate))"),
+                                   L("záruka do \(AppFormat.date(item.warrantyEndDate))", "warranty until \(AppFormat.date(item.warrantyEndDate))", "Garantie bis \(AppFormat.date(item.warrantyEndDate))"),
                                    AppFormat.price(item.price, currency: item.currencyCode),
-                                   item.serialNumber.isEmpty ? "" : L("S/N \(item.serialNumber)", "S/N \(item.serialNumber)")]
+                                   item.serialNumber.isEmpty ? "" : L("S/N \(item.serialNumber)", "S/N \(item.serialNumber)", "S/N \(item.serialNumber)")]
                         .filter { !$0.isEmpty && $0 != "—" }
                         .joined(separator: " · ")
                     NSAttributedString(string: details, attributes: subtitle).draw(in: CGRect(x: margin, y: top, width: width, height: 30))

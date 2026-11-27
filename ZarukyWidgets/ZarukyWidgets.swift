@@ -51,7 +51,7 @@ extension WidgetSnapshot {
         s.items = [
             Item(id: UUID(), name: "iPhone 16 Pro", store: "Alza.cz", endDate: inDays(18), symbol: "iphone"),
             Item(id: UUID(), name: "Sony WH-1000XM6", store: "Alza.cz", endDate: inDays(28), symbol: "headphones"),
-            Item(id: UUID(), name: L("Pračka Bosch", "Bosch washer"), store: "Datart", endDate: inDays(700), symbol: "washer.fill"),
+            Item(id: UUID(), name: L("Pračka Bosch", "Bosch washer", "Bosch Waschmaschine"), store: "Datart", endDate: inDays(700), symbol: "washer.fill"),
         ]
         s.value = 98_950
         s.activeCount = 5
@@ -72,8 +72,8 @@ struct EndingSoonWidget: Widget {
             EndingSoonView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName(L("Brzy končí", "Ending soon"))
-        .description(L("Záruky, které skončí nejdřív.", "The warranties that end first."))
+        .configurationDisplayName(L("Brzy končí", "Ending soon", "Endet bald"))
+        .description(L("Záruky, které skončí nejdřív.", "The warranties that end first.", "Die Garantien, die zuerst enden."))
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
     }
 }
@@ -117,7 +117,7 @@ struct EndingSoonView: View {
                     .font(.title3)
                     .foregroundStyle(color(item))
                 Spacer()
-                Text(L("Končí", "Ends"))
+                Text(L("Končí", "Ends", "Endet"))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -144,21 +144,21 @@ struct EndingSoonView: View {
     private var medium: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Label(L("Brzy končí", "Ending soon"), systemImage: "checkmark.seal.fill")
+                Label(L("Brzy končí", "Ending soon", "Endet bald"), systemImage: "checkmark.seal.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(brand)
                     .labelStyle(.titleAndIcon)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
-                Text(L("Pod zárukou", "Under warranty"))
+                Text(L("Pod zárukou", "Under warranty", "Mit Garantie"))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Text(AppFormat.price(entry.snapshot?.value ?? 0, currency: entry.snapshot?.currency ?? "CZK"))
                     .font(.system(.title3, design: .rounded).weight(.bold))
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
-                Text(L("\(entry.snapshot?.activeCount ?? items.count) platných", "\(entry.snapshot?.activeCount ?? items.count) active"))
+                Text(L("\(entry.snapshot?.activeCount ?? items.count) platných", "\(entry.snapshot?.activeCount ?? items.count) active", "\(entry.snapshot?.activeCount ?? items.count) aktiv"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -203,7 +203,7 @@ struct EndingSoonView: View {
     private var rectangular: some View {
         let item = items[0]
         return VStack(alignment: .leading, spacing: 1) {
-            Label(L("Záruka končí", "Warranty ends"), systemImage: "checkmark.seal")
+            Label(L("Záruka končí", "Warranty ends", "Garantie endet"), systemImage: "checkmark.seal")
                 .font(.caption2.weight(.semibold))
             Text(item.name).font(.headline).lineLimit(1)
             Text(AppFormat.remaining(days: days(item))).font(.caption)
@@ -223,10 +223,10 @@ struct EndingSoonView: View {
                 .font(.title3)
                 .foregroundStyle(brand)
             if family == .systemSmall || family == .systemMedium { Spacer(minLength: 0) }
-            Text(L("Žádná záruka nekončí", "No warranty ending"))
+            Text(L("Žádná záruka nekončí", "No warranty ending", "Keine Garantie endet bald"))
                 .font(.subheadline.weight(.semibold))
             if family == .systemSmall || family == .systemMedium {
-                Text(L("Naskenuj účtenku v Zárukách.", "Scan a receipt in Záruky."))
+                Text(L("Naskenuj účtenku v Hlídači záruk.", "Scan a receipt in Warranty Guard.", "Scanne einen Beleg im Garantie-Wächter."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

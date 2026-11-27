@@ -19,7 +19,7 @@ struct AttachmentsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(L("Další doklady", "More documents"))
+                Text(L("Další doklady", "More documents", "Weitere Dokumente"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -27,8 +27,7 @@ struct AttachmentsCard: View {
             }
 
             if attachments.isEmpty {
-                Text(L("Přidej záruční list, fotku výrobku nebo štítek se sériovým číslem. Při reklamaci se hodí.",
-                       "Add the warranty card, a photo of the product or its serial number label. They help with a claim."))
+                Text(L("Přidej záruční list, fotku výrobku nebo štítek se sériovým číslem. Při reklamaci se hodí.", "Add the warranty card, a photo of the product or its serial number label. They help with a claim.", "Füge den Garantieschein, ein Produktfoto oder das Typenschild hinzu. Das hilft bei einer Reklamation."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -51,10 +50,10 @@ struct AttachmentsCard: View {
                 ReceiptImageViewer(image: image)
             }
         }
-        .alert(L("Smazat doklad?", "Delete this document?"),
+        .alert(L("Smazat doklad?", "Delete this document?", "Dieses Dokument löschen?"),
                isPresented: Binding(get: { toDelete != nil }, set: { if !$0 { toDelete = nil } })) {
-            Button(L("Zrušit", "Cancel"), role: .cancel) { toDelete = nil }
-            Button(L("Smazat", "Delete"), role: .destructive) { deletePending() }
+            Button(L("Zrušit", "Cancel", "Abbrechen"), role: .cancel) { toDelete = nil }
+            Button(L("Smazat", "Delete", "Löschen"), role: .destructive) { deletePending() }
         }
     }
 
@@ -68,12 +67,12 @@ struct AttachmentsCard: View {
                 }
             }
         } label: {
-            Label(L("Přidat", "Add"), systemImage: "plus")
+            Label(L("Přidat", "Add", "Hinzufügen"), systemImage: "plus")
                 .font(.subheadline.weight(.semibold))
                 .frame(minWidth: 44, minHeight: 44)
                 .contentShape(.rect)
         }
-        .accessibilityLabel(L("Přidat doklad", "Add a document"))
+        .accessibilityLabel(L("Přidat doklad", "Add a document", "Dokument hinzufügen"))
     }
 
     private func thumbnail(_ attachment: Attachment) -> some View {
@@ -115,10 +114,10 @@ struct AttachmentsCard: View {
                     }
                 }
             } label: {
-                Label(L("Změnit typ", "Change type"), systemImage: "tag")
+                Label(L("Změnit typ", "Change type", "Typ ändern"), systemImage: "tag")
             }
             Button(role: .destructive) { toDelete = attachment } label: {
-                Label(L("Smazat", "Delete"), systemImage: "trash")
+                Label(L("Smazat", "Delete", "Löschen"), systemImage: "trash")
             }
         }
     }
@@ -151,9 +150,9 @@ struct ImageSourceButtons: View {
     var pick: (ImageSource) -> Void
 
     var body: some View {
-        Button { pick(.scan) } label: { Label(L("Vyfotit", "Take a photo"), systemImage: "camera") }
-        Button { pick(.photos) } label: { Label(L("Z Fotek", "From Photos"), systemImage: "photo") }
-        Button { pick(.files) } label: { Label(L("Ze Souborů", "From Files"), systemImage: "folder") }
+        Button { pick(.scan) } label: { Label(L("Vyfotit", "Take a photo", "Foto aufnehmen"), systemImage: "camera") }
+        Button { pick(.photos) } label: { Label(L("Z Fotek", "From Photos", "Aus Fotos"), systemImage: "photo") }
+        Button { pick(.files) } label: { Label(L("Ze Souborů", "From Files", "Aus Dateien"), systemImage: "folder") }
     }
 }
 

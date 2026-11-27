@@ -47,7 +47,7 @@ struct PurchaseFormView: View {
                                 if isReading {
                                     HStack(spacing: 8) {
                                         ProgressView()
-                                        Text(L("Čtu účtenku…", "Reading the receipt…"))
+                                        Text(L("Čtu účtenku…", "Reading the receipt…", "Beleg wird gelesen…"))
                                             .font(.subheadline.weight(.semibold))
                                     }
                                     .padding(.horizontal, 14)
@@ -72,23 +72,23 @@ struct PurchaseFormView: View {
                     .animation(.snappy, value: isReading)
                 }
 
-                Section(L("Nákup", "Purchase")) {
+                Section(L("Nákup", "Purchase", "Kauf")) {
                     // Labels stay visible once a field is filled, so a filled form still says what's what.
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(L("Produkt", "Product"))
+                        Text(L("Produkt", "Product", "Produkt"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        TextField(L("Co jsi koupil? (např. iPhone 16)", "What did you buy? (e.g. iPhone 16)"), text: $productName)
+                        TextField(L("Co jsi koupil? (např. iPhone 16)", "What did you buy? (e.g. iPhone 16)", "Was hast du gekauft? (z. B. iPhone 16)"), text: $productName)
                             .font(.headline)
                     }
-                    LabeledContent(L("Obchod", "Store")) {
-                        TextField(L("Obchod", "Store"), text: $storeName, prompt: Text(L("např. Alza.cz", "e.g. Amazon")))
+                    LabeledContent(L("Obchod", "Store", "Geschäft")) {
+                        TextField(L("Obchod", "Store", "Geschäft"), text: $storeName, prompt: Text(L("např. Alza.cz", "e.g. Amazon", "z. B. Amazon")))
                             .multilineTextAlignment(.trailing)
                     }
-                    DatePicker(L("Datum nákupu", "Purchase date"), selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
-                    LabeledContent(L("Cena", "Price")) {
+                    DatePicker(L("Datum nákupu", "Purchase date", "Kaufdatum"), selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
+                    LabeledContent(L("Cena", "Price", "Preis")) {
                         HStack(spacing: 6) {
-                            TextField(L("Cena", "Price"), text: $priceText, prompt: Text("0"))
+                            TextField(L("Cena", "Price", "Preis"), text: $priceText, prompt: Text("0"))
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text(AppSettings.symbol(for: currencyCode)).foregroundStyle(.secondary)
@@ -97,11 +97,11 @@ struct PurchaseFormView: View {
                     NavigationLink {
                         CurrencyPicker(selection: $currencyCode)
                     } label: {
-                        LabeledContent(L("Měna", "Currency"), value: AppSettings.name(for: currencyCode))
+                        LabeledContent(L("Měna", "Currency", "Währung"), value: AppSettings.name(for: currencyCode))
                     }
-                    LabeledContent(L("Sériové číslo", "Serial number")) {
-                        TextField(L("Sériové číslo / IMEI", "Serial number / IMEI"), text: $serialNumber,
-                                  prompt: Text(L("nebo IMEI", "or IMEI")))
+                    LabeledContent(L("Sériové číslo", "Serial number", "Seriennummer")) {
+                        TextField(L("Sériové číslo / IMEI", "Serial number / IMEI", "Seriennummer / IMEI"), text: $serialNumber,
+                                  prompt: Text(L("nebo IMEI", "or IMEI", "oder IMEI")))
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .font(.body.monospaced())
@@ -110,14 +110,14 @@ struct PurchaseFormView: View {
                 }
 
                 Section {
-                    Picker(L("Délka záruky", "Warranty length"), selection: $warrantyMonths) {
+                    Picker(L("Délka záruky", "Warranty length", "Garantiedauer"), selection: $warrantyMonths) {
                         ForEach(pickerOptions, id: \.self) { months in
                             Text(AppFormat.warrantyLength(months: months)).tag(months)
                         }
                     }
                     // Any other length, a month at a time.
                     Stepper(value: $warrantyMonths, in: 1...120) {
-                        Text(L("Upravit po měsících", "Adjust by month"))
+                        Text(L("Upravit po měsících", "Adjust by month", "Monatsweise anpassen"))
                             .foregroundStyle(.secondary)
                     }
                     LabeledContent {
@@ -125,18 +125,18 @@ struct PurchaseFormView: View {
                             .fontWeight(.semibold)
                             .foregroundStyle(endDate < Date() ? Color.secondary : Theme.brand)
                     } label: {
-                        Label(L("Konec záruky", "Warranty ends"), systemImage: "calendar.badge.checkmark")
+                        Label(L("Konec záruky", "Warranty ends", "Garantie endet"), systemImage: "calendar.badge.checkmark")
                     }
                 } header: {
-                    Text(L("Záruka", "Warranty"))
+                    Text(L("Záruka", "Warranty", "Garantie"))
                 } footer: {
                     Text(warrantyFooter)
                 }
 
                 if !folders.isEmpty {
-                    Section(L("Složka", "Folder")) {
-                        Picker(L("Složka", "Folder"), selection: $folder) {
-                            Text(L("Bez složky", "No folder")).tag(Folder?.none)
+                    Section(L("Složka", "Folder", "Ordner")) {
+                        Picker(L("Složka", "Folder", "Ordner"), selection: $folder) {
+                            Text(L("Bez složky", "No folder", "Kein Ordner")).tag(Folder?.none)
                             ForEach(folders) { folder in
                                 Text(folder.name).tag(Optional(folder))
                             }
@@ -144,25 +144,25 @@ struct PurchaseFormView: View {
                     }
                 }
 
-                Section(L("Poznámka", "Note")) {
-                    TextField(L("Příslušenství, kde je krabice…", "Accessories, where the box is…"), text: $notes, axis: .vertical)
+                Section(L("Poznámka", "Note", "Notiz")) {
+                    TextField(L("Příslušenství, kde je krabice…", "Accessories, where the box is…", "Zubehör, wo der Karton ist…"), text: $notes, axis: .vertical)
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(purchase == nil ? L("Nová účtenka", "New receipt") : L("Upravit", "Edit"))
+            .navigationTitle(purchase == nil ? L("Nová účtenka", "New receipt", "Neuer Beleg") : L("Upravit", "Edit", "Bearbeiten"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(L("Zrušit", "Cancel")) { dismiss() }
+                    Button(L("Zrušit", "Cancel", "Abbrechen")) { dismiss() }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button(L("Hotovo", "Done")) {
+                    Button(L("Hotovo", "Done", "Fertig")) {
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(L("Uložit", "Save")) { save() }
+                    Button(L("Uložit", "Save", "Sichern")) { save() }
                         .disabled(productName.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
@@ -180,10 +180,10 @@ struct PurchaseFormView: View {
     }
 
     private var warrantyFooter: String {
-        let legal = L("V EU platí na nové zboží zákonná záruka 24 měsíců.", "In the EU, new goods have a 24-month legal warranty.")
+        let legal = L("V EU platí na nové zboží zákonná záruka 24 měsíců.", "In the EU, new goods have a 24-month legal warranty.", "In der EU gilt für neue Ware eine gesetzliche Gewährleistung von 24 Monaten.")
         guard AppSettings.remindersOn else { return legal }
         let days = AppFormat.days(AppSettings.reminderDays)
-        return legal + " " + L("Připomenu se \(days) před koncem.", "I'll remind you \(days) before it ends.")
+        return legal + " " + L("Připomenu se \(days) před koncem.", "I'll remind you \(days) before it ends.", "Ich erinnere dich \(days) vor dem Ende.")
     }
 
     private var pickerOptions: [Int] {
@@ -220,7 +220,7 @@ struct PurchaseFormView: View {
             text = (try? await OCRService.recognizeText(in: image)) ?? ""
         }
         guard !text.isEmpty else {
-            readNote = L("Text se nepodařilo přečíst, vyplň údaje ručně.", "Couldn't read the text, please fill in the details.")
+            readNote = L("Text se nepodařilo přečíst, vyplň údaje ručně.", "Couldn't read the text, please fill in the details.", "Der Text war nicht lesbar, bitte trag die Angaben selbst ein.")
             return
         }
         let draft = await ReceiptParser.parse(text)
@@ -241,16 +241,14 @@ struct PurchaseFormView: View {
             }
         }
         readNote = draft.usedAI
-            ? L("Vyplněno pomocí AI v telefonu. Zkontroluj prosím údaje.", "Filled in by on-device AI. Please check the details.")
-            : L("Vyplněno automaticky. Zkontroluj prosím údaje.", "Filled in automatically. Please check the details.")
+            ? L("Vyplněno pomocí AI v telefonu. Zkontroluj prosím údaje.", "Filled in by on-device AI. Please check the details.", "Von der KI auf dem Gerät ausgefüllt. Bitte prüf die Angaben.")
+            : L("Vyplněno automaticky. Zkontroluj prosím údaje.", "Filled in automatically. Please check the details.", "Automatisch ausgefüllt. Bitte prüf die Angaben.")
         if draft.extendedWarranty, let months = draft.warrantyMonths {
             let length = AppFormat.warrantyLength(months: months)
-            readNote = (readNote ?? "") + " " + L("Na účtence je prodloužená záruka, nastavil jsem \(length).",
-                                                  "The receipt shows an extended warranty, so it's set to \(length).")
+            readNote = (readNote ?? "") + " " + L("Na účtence je prodloužená záruka, nastavil jsem \(length).", "The receipt shows an extended warranty, so it's set to \(length).", "Auf dem Beleg steht eine verlängerte Garantie, deshalb sind \(length) eingestellt.")
         }
         if let suggestedFolder {
-            readNote = (readNote ?? "") + " " + L("Složku „\(suggestedFolder)“ jsem navrhl podle produktu.",
-                                                  "Suggested the “\(suggestedFolder)” folder from the product.")
+            readNote = (readNote ?? "") + " " + L("Složku „\(suggestedFolder)“ jsem navrhl podle produktu.", "Suggested the “\(suggestedFolder)” folder from the product.", "Passend zum Produkt wurde der Ordner „\(suggestedFolder)“ vorgeschlagen.")
         }
     }
 

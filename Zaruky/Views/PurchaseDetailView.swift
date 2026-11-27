@@ -40,11 +40,11 @@ struct PurchaseDetailView: View {
             .padding(.bottom, 32)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(purchase.productName.isEmpty ? L("Detail", "Details") : purchase.productName)
+        .navigationTitle(purchase.productName.isEmpty ? L("Detail", "Details", "Details") : purchase.productName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(L("Upravit", "Edit")) { showEdit = true }
+                Button(L("Upravit", "Edit", "Bearbeiten")) { showEdit = true }
             }
             ToolbarItem(placement: .primaryAction) { moreMenu }
         }
@@ -56,12 +56,11 @@ struct PurchaseDetailView: View {
                 ReceiptImageViewer(image: receiptImage)
             }
         }
-        .alert(L("Smazat účtenku?", "Delete receipt?"), isPresented: $confirmDelete) {
-            Button(L("Zrušit", "Cancel"), role: .cancel) {}
-            Button(L("Smazat", "Delete"), role: .destructive) { delete() }
+        .alert(L("Smazat účtenku?", "Delete receipt?", "Beleg löschen?"), isPresented: $confirmDelete) {
+            Button(L("Zrušit", "Cancel", "Abbrechen"), role: .cancel) {}
+            Button(L("Smazat", "Delete", "Löschen"), role: .destructive) { delete() }
         } message: {
-            Text(L("Účtenka i připomínka zmizí ze všech tvých zařízení.",
-                   "The receipt and its reminder are removed from all your devices."))
+            Text(L("Účtenka i připomínka zmizí ze všech tvých zařízení.", "The receipt and its reminder are removed from all your devices.", "Der Beleg und seine Erinnerung werden von allen deinen Geräten entfernt."))
         }
         .imageSourcePicker($receiptSource) { setReceipt($0) }
         .task(id: scenePhase) {
@@ -74,7 +73,7 @@ struct PurchaseDetailView: View {
     private var header: some View {
         VStack(spacing: 10) {
             ProductTile(name: purchase.productName, status: purchase.status, size: 72)
-            Text(purchase.productName.isEmpty ? L("Bez názvu", "Untitled") : purchase.productName)
+            Text(purchase.productName.isEmpty ? L("Bez názvu", "Untitled", "Ohne Namen") : purchase.productName)
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
             if !purchase.storeName.isEmpty || purchase.folder != nil {
@@ -99,8 +98,8 @@ struct PurchaseDetailView: View {
 
     private var headerAccessibility: String {
         var parts: [String] = []
-        if !purchase.storeName.isEmpty { parts.append(L("Obchod \(purchase.storeName)", "Store \(purchase.storeName)")) }
-        if let folder = purchase.folder { parts.append(L("složka \(folder.name)", "folder \(folder.name)")) }
+        if !purchase.storeName.isEmpty { parts.append(L("Obchod \(purchase.storeName)", "Store \(purchase.storeName)", "Geschäft \(purchase.storeName)")) }
+        if let folder = purchase.folder { parts.append(L("složka \(folder.name)", "folder \(folder.name)", "Ordner \(folder.name)")) }
         return parts.joined(separator: ", ")
     }
 
@@ -112,8 +111,7 @@ struct PurchaseDetailView: View {
                 .foregroundStyle(.orange)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 8) {
-                Text(L("Upozornění jsou v iOS vypnutá, takže připomínka konce záruky nepřijde.",
-                       "Notifications are off in iOS, so the warranty reminder won't arrive."))
+                Text(L("Upozornění jsou v iOS vypnutá, takže připomínka konce záruky nepřijde.", "Notifications are off in iOS, so the warranty reminder won't arrive.", "Mitteilungen sind in iOS aus, die Garantie-Erinnerung kommt also nicht an."))
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
@@ -121,7 +119,7 @@ struct PurchaseDetailView: View {
                         UIApplication.shared.open(url)
                     }
                 } label: {
-                    Text(L("Zapnout v Nastavení", "Turn on in Settings"))
+                    Text(L("Zapnout v Nastavení", "Turn on in Settings", "In Einstellungen einschalten"))
                         .frame(minHeight: 44)
                         .contentShape(.rect)
                 }
@@ -171,13 +169,13 @@ struct PurchaseDetailView: View {
 
     private var infoCard: some View {
         VStack(spacing: 0) {
-            infoRow(L("Koupeno", "Bought"), AppFormat.date(purchase.purchaseDate), symbol: "calendar")
+            infoRow(L("Koupeno", "Bought", "Gekauft"), AppFormat.date(purchase.purchaseDate), symbol: "calendar")
             Divider().padding(.leading, 52)
-            infoRow(L("Záruka do", "Warranty until"), AppFormat.date(purchase.warrantyEndDate), symbol: "calendar.badge.checkmark")
+            infoRow(L("Záruka do", "Warranty until", "Garantie bis"), AppFormat.date(purchase.warrantyEndDate), symbol: "calendar.badge.checkmark")
             Divider().padding(.leading, 52)
-            infoRow(L("Délka záruky", "Warranty length"), AppFormat.warrantyLength(months: purchase.warrantyMonths), symbol: "shield.lefthalf.filled")
+            infoRow(L("Délka záruky", "Warranty length", "Garantiedauer"), AppFormat.warrantyLength(months: purchase.warrantyMonths), symbol: "shield.lefthalf.filled")
             Divider().padding(.leading, 52)
-            infoRow(L("Cena", "Price"), AppFormat.price(purchase.price, currency: purchase.currencyCode), symbol: "creditcard")
+            infoRow(L("Cena", "Price", "Preis"), AppFormat.price(purchase.price, currency: purchase.currencyCode), symbol: "creditcard")
             if !purchase.serialNumber.isEmpty {
                 Divider().padding(.leading, 52)
                 serialRow
@@ -210,7 +208,7 @@ struct PurchaseDetailView: View {
                 .font(.body)
                 .foregroundStyle(Theme.brand)
                 .frame(width: 28)
-            Text(L("Sériové číslo", "Serial number"))
+            Text(L("Sériové číslo", "Serial number", "Seriennummer"))
                 .foregroundStyle(.secondary)
             Spacer()
             Text(purchase.serialNumber)
@@ -226,7 +224,7 @@ struct PurchaseDetailView: View {
             Button {
                 UIPasteboard.general.string = purchase.serialNumber
             } label: {
-                Label(L("Kopírovat", "Copy"), systemImage: "doc.on.doc")
+                Label(L("Kopírovat", "Copy", "Kopieren"), systemImage: "doc.on.doc")
             }
         }
     }
@@ -241,17 +239,17 @@ struct PurchaseDetailView: View {
     private var claimMessage: String {
         var parts = [purchase.productName]
         let bought = AppFormat.date(purchase.purchaseDate)
-        parts.append(purchase.storeName.isEmpty ? L("koupeno \(bought)", "bought on \(bought)")
-                                                : L("koupeno \(bought) v \(purchase.storeName)", "bought on \(bought) at \(purchase.storeName)"))
+        parts.append(purchase.storeName.isEmpty ? L("koupeno \(bought)", "bought on \(bought)", "gekauft am \(bought)")
+                                                : L("koupeno \(bought) v \(purchase.storeName)", "bought on \(bought) at \(purchase.storeName)", "gekauft am \(bought) bei \(purchase.storeName)"))
         if !purchase.serialNumber.isEmpty {
-            parts.append(L("sériové číslo \(purchase.serialNumber)", "serial number \(purchase.serialNumber)"))
+            parts.append(L("sériové číslo \(purchase.serialNumber)", "serial number \(purchase.serialNumber)", "Seriennummer \(purchase.serialNumber)"))
         }
         return parts.filter { !$0.isEmpty }.joined(separator: ", ") + "."
     }
 
     private var notesCard: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(L("Poznámka", "Note"), systemImage: "note.text")
+            Label(L("Poznámka", "Note", "Notiz"), systemImage: "note.text")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(purchase.notes)
@@ -266,7 +264,7 @@ struct PurchaseDetailView: View {
     private var receiptCard: some View {
         if let receiptImage {
             VStack(alignment: .leading, spacing: 12) {
-                Text(L("Účtenka", "Receipt"))
+                Text(L("Účtenka", "Receipt", "Beleg"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Button { showImage = true } label: {
@@ -285,7 +283,7 @@ struct PurchaseDetailView: View {
                         }
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(L("Zobrazit účtenku", "View receipt"))
+                .accessibilityLabel(L("Zobrazit účtenku", "View receipt", "Beleg ansehen"))
 
                 claimShareButton
             }
@@ -301,11 +299,10 @@ struct PurchaseDetailView: View {
                             .font(.title3)
                             .foregroundStyle(Theme.brand)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(L("Přidat fotku účtenky", "Add a receipt photo"))
+                            Text(L("Přidat fotku účtenky", "Add a receipt photo", "Belegfoto hinzufügen"))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(Theme.brand)
-                            Text(L("K tomuhle nákupu ji zatím nemáš. Při reklamaci se hodí.",
-                                   "This purchase doesn't have one yet. It helps with a claim."))
+                            Text(L("K tomuhle nákupu ji zatím nemáš. Při reklamaci se hodí.", "This purchase doesn't have one yet. It helps with a claim.", "Zu diesem Kauf gibt es noch keins. Es hilft bei einer Reklamation."))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.leading)
@@ -329,8 +326,8 @@ struct PurchaseDetailView: View {
     @ViewBuilder
     private var claimShareButton: some View {
         if claimImages.isEmpty {
-            ShareLink(item: claimMessage, subject: Text(L("Reklamace – ", "Claim – ") + purchase.productName)) {
-                claimLabel(L("Poslat údaje k reklamaci", "Send details for a claim"))
+            ShareLink(item: claimMessage, subject: Text(L("Reklamace – ", "Claim – ", "Reklamation – ") + purchase.productName)) {
+                claimLabel(L("Poslat údaje k reklamaci", "Send details for a claim", "Angaben für Reklamation senden"))
             }
             .buttonStyle(.glassProminent)
             .controlSize(.large)
@@ -349,12 +346,12 @@ struct PurchaseDetailView: View {
     private var imageShareLink: some View {
         ShareLink(
             items: claimImages,
-            subject: Text(L("Reklamace – ", "Claim – ") + purchase.productName),
+            subject: Text(L("Reklamace – ", "Claim – ", "Reklamation – ") + purchase.productName),
             message: Text(claimMessage),
-            preview: { image in SharePreview(L("Reklamace – ", "Claim – ") + purchase.productName, image: image) }
+            preview: { image in SharePreview(L("Reklamace – ", "Claim – ", "Reklamation – ") + purchase.productName, image: image) }
         ) {
-            claimLabel(receiptImage == nil ? L("Poslat doklady k reklamaci", "Send documents for a claim")
-                                           : L("Poslat účtenku k reklamaci", "Send receipt for a claim"))
+            claimLabel(receiptImage == nil ? L("Poslat doklady k reklamaci", "Send documents for a claim", "Dokumente für Reklamation senden")
+                                           : L("Poslat účtenku k reklamaci", "Send receipt for a claim", "Beleg für Reklamation senden"))
         }
         .buttonStyle(.glassProminent)
         .controlSize(.large)
@@ -366,8 +363,7 @@ struct PurchaseDetailView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "lightbulb.fill")
                     .foregroundStyle(Theme.amber)
-                Text(L("Reklamaci uplatníš u prodejce, kde jsi zboží koupil. Stačí účtenka a popis závady, prodejce má na vyřízení 30 dní.",
-                       "Make a claim with the store you bought it from. The receipt and a description of the fault are enough; the store has 30 days to resolve it."))
+                Text(L("Reklamaci uplatníš u prodejce, kde jsi zboží koupil. Stačí účtenka a popis závady, prodejce má na vyřízení 30 dní.", "Make a claim with the store you bought it from. The receipt and a description of the fault are enough; the store has 30 days to resolve it.", "Reklamiere beim Geschäft, in dem du gekauft hast. Der Beleg und eine Beschreibung des Mangels reichen. Die genauen Fristen hängen vom Land ab."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -379,8 +375,8 @@ struct PurchaseDetailView: View {
         Menu {
             Menu {
                 Button { move(to: nil) } label: {
-                    if purchase.folder == nil { Label(L("Bez složky", "No folder"), systemImage: "checkmark") }
-                    else { Text(L("Bez složky", "No folder")) }
+                    if purchase.folder == nil { Label(L("Bez složky", "No folder", "Kein Ordner"), systemImage: "checkmark") }
+                    else { Text(L("Bez složky", "No folder", "Kein Ordner")) }
                 }
                 ForEach(folders) { folder in
                     Button { move(to: folder) } label: {
@@ -389,41 +385,38 @@ struct PurchaseDetailView: View {
                     }
                 }
             } label: {
-                Label(L("Přesunout do složky", "Move to folder"), systemImage: "folder")
+                Label(L("Přesunout do složky", "Move to folder", "In Ordner verschieben"), systemImage: "folder")
             }
             Divider()
             Button(role: .destructive) { confirmDelete = true } label: {
-                Label(L("Smazat", "Delete"), systemImage: "trash")
+                Label(L("Smazat", "Delete", "Löschen"), systemImage: "trash")
             }
         } label: {
             Image(systemName: "ellipsis")
         }
-        .accessibilityLabel(L("Další akce", "More actions"))
+        .accessibilityLabel(L("Další akce", "More actions", "Weitere Aktionen"))
     }
 
     // MARK: Text
 
     private var statusTitle: String {
         switch purchase.status {
-        case .active: L("Kryto zárukou", "Covered")
-        case .expiringSoon: L("Záruka brzy končí", "Warranty ending soon")
-        case .expired: L("Záruka skončila", "Warranty has ended")
+        case .active: L("Kryto zárukou", "Covered", "Abgedeckt")
+        case .expiringSoon: L("Záruka brzy končí", "Warranty ending soon", "Garantie endet bald")
+        case .expired: L("Záruka skončila", "Warranty has ended", "Garantie ist abgelaufen")
         }
     }
 
     private var statusText: String {
         let days = purchase.daysRemaining
         let end = AppFormat.date(purchase.warrantyEndDate)
-        if days < 0 { return L("Skončila \(end).", "It ended on \(end).") }
-        if days == 0 { return L("Končí dnes. Pokud něco nefunguje, reklamuj to ještě dnes.",
-                                "It ends today. If something is wrong, make a claim today.") }
+        if days < 0 { return L("Skončila \(end).", "It ended on \(end).", "Sie ist am \(end) abgelaufen.") }
+        if days == 0 { return L("Končí dnes. Pokud něco nefunguje, reklamuj to ještě dnes.", "It ends today. If something is wrong, make a claim today.", "Sie endet heute. Wenn etwas nicht stimmt, reklamiere noch heute.") }
         if purchase.status == .expiringSoon {
-            return L("Končí \(end). Zkontroluj, jestli všechno funguje, dokud je čas.",
-                     "It ends on \(end). Check everything still works while there's time.")
+            return L("Končí \(end). Zkontroluj, jestli všechno funguje, dokud je čas.", "It ends on \(end). Check everything still works while there's time.", "Sie endet am \(end). Prüf, ob alles noch funktioniert, solange Zeit ist.")
         }
-        guard AppSettings.remindersOn, !notificationsDenied else { return L("Do \(end).", "Until \(end).") }
-        return L("Do \(end). Připomeneme se \(AppFormat.days(NotificationService.daysBefore)) předem.",
-                 "Until \(end). We'll remind you \(AppFormat.days(NotificationService.daysBefore)) before.")
+        guard AppSettings.remindersOn, !notificationsDenied else { return L("Do \(end).", "Until \(end).", "Bis \(end).") }
+        return L("Do \(end). Připomeneme se \(AppFormat.days(NotificationService.daysBefore)) předem.", "Until \(end). We'll remind you \(AppFormat.days(NotificationService.daysBefore)) before.", "Bis \(end). Wir erinnern dich \(AppFormat.days(NotificationService.daysBefore)) vorher.")
     }
 
     /// Whole years only when the months divide evenly, so 26 months never reads as "2 years".
@@ -437,16 +430,19 @@ struct PurchaseDetailView: View {
     }
 
     private func ringUnit(_ days: Int) -> String {
-        if days < 0 { return L("dní", "days") }
+        if days < 0 { return L("dní", "days", "Tage") }
         if days <= 60 {
+            if L10n.isGerman { return days == 1 ? "Tag" : "Tage" }
             return L10n.isEnglish ? (days == 1 ? "day" : "days")
                 : AppFormat.czechPlural(days, one: "den", few: "dny", many: "dní")
         }
         let months = Int((Double(days) / 30.44).rounded())
         if !showsYears(months) {
+            if L10n.isGerman { return "Monate" }
             return L10n.isEnglish ? "months" : AppFormat.czechPlural(months, one: "měsíc", few: "měsíce", many: "měsíců")
         }
         let years = months / 12
+        if L10n.isGerman { return years == 1 ? "Jahr" : "Jahre" }
         return L10n.isEnglish ? (years == 1 ? "year" : "years") : AppFormat.czechPlural(years, one: "rok", few: "roky", many: "let")
     }
 
@@ -486,7 +482,7 @@ struct ReceiptImageViewer: View {
                 .background(Color.black)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button(L("Hotovo", "Done")) { dismiss() }
+                        Button(L("Hotovo", "Done", "Fertig")) { dismiss() }
                     }
                 }
         }

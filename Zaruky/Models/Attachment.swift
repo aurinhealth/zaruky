@@ -12,10 +12,10 @@ enum AttachmentKind: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .warrantyCard: L("Záruční list", "Warranty card")
-        case .productPhoto: L("Fotka výrobku", "Product photo")
-        case .serialLabel: L("Štítek se sériovým číslem", "Serial number label")
-        case .other: L("Jiný doklad", "Other document")
+        case .warrantyCard: L("Záruční list", "Warranty card", "Garantieschein")
+        case .productPhoto: L("Fotka výrobku", "Product photo", "Produktfoto")
+        case .serialLabel: L("Štítek se sériovým číslem", "Serial number label", "Typenschild")
+        case .other: L("Jiný doklad", "Other document", "Anderes Dokument")
         }
     }
 

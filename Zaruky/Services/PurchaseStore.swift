@@ -82,7 +82,7 @@ final class PurchaseStore {
                 break
             }
         } catch {
-            errorMessage = L("Nákup se nezdařil. Zkus to prosím znovu.", "The purchase failed. Please try again.")
+            errorMessage = L("Nákup se nezdařil. Zkus to prosím znovu.", "The purchase failed. Please try again.", "Der Kauf ist fehlgeschlagen. Bitte versuch es noch einmal.")
         }
     }
 
@@ -90,7 +90,7 @@ final class PurchaseStore {
         do {
             try await AppStore.sync()
         } catch {
-            errorMessage = L("Obnovení nákupu se nezdařilo.", "Couldn't restore the purchase.")
+            errorMessage = L("Obnovení nákupu se nezdařilo.", "Couldn't restore the purchase.", "Der Kauf ließ sich nicht wiederherstellen.")
         }
         await refreshEntitlements()
     }
