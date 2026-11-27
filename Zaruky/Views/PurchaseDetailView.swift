@@ -278,6 +278,7 @@ struct PurchaseDetailView: View {
             return L("Končí \(end). Zkontroluj, jestli všechno funguje, dokud je čas.",
                      "It ends on \(end). Check everything still works while there's time.")
         }
+        guard AppSettings.remindersOn else { return L("Do \(end).", "Until \(end).") }
         return L("Do \(end). Připomeneme se \(AppFormat.days(NotificationService.daysBefore)) předem.",
                  "Until \(end). We'll remind you \(AppFormat.days(NotificationService.daysBefore)) before.")
     }

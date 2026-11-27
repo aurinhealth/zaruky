@@ -17,14 +17,15 @@ struct PurchaseFormView: View {
     @State private var storeName = ""
     @State private var purchaseDate = Date()
     @State private var priceText = ""
-    @State private var warrantyMonths = 24
+    @State private var warrantyMonths = AppSettings.defaultWarrantyMonths
+    @State private var currencyCode = AppSettings.currency
     @State private var notes = ""
     @State private var folder: Folder?
     @State private var isReading = false
     @State private var readNote: String?
     @State private var didLoad = false
 
-    private let warrantyOptions = [6, 12, 24, 36, 48, 60]
+    private let warrantyOptions = AppSettings.warrantyOptions
 
     var body: some View {
         NavigationStack {
@@ -69,7 +70,13 @@ struct PurchaseFormView: View {
                     HStack {
                         TextField(L("Cena", "Price"), text: $priceText)
                             .keyboardType(.decimalPad)
-                        Text(L("Kč", "CZK")).foregroundStyle(.secondary)
+                        Picker(L("Měna", "Currency"), selection: $currencyCode) {
+                            ForEach(currencyOptions, id: \.self) { code in
+                                Text(AppSettings.symbol(for: code)).tag(code)
+                            }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
                     }
                 }
 
@@ -89,8 +96,7 @@ struct PurchaseFormView: View {
                 } header: {
                     Text(L("Záruka", "Warranty"))
                 } footer: {
-                    Text(L("V EU platí na nové zboží zákonná záruka 24 měsíců. Připomenu se 30 dní před koncem.",
-                           "In the EU, new goods have a 24-month legal warranty. I'll remind you 30 days before it ends."))
+                    Text(warrantyFooter)
                 }
 
                 if !folders.isEmpty {
@@ -132,6 +138,17 @@ struct PurchaseFormView: View {
         folderQuery.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
+    private var warrantyFooter: String {
+        let legal = L("V EU platí na nové zboží zákonná záruka 24 měsíců.", "In the EU, new goods have a 24-month legal warranty.")
+        guard AppSettings.remindersOn else { return legal }
+        let days = AppFormat.days(AppSettings.reminderDays)
+        return legal + " " + L("Připomenu se \(days) před koncem.", "I'll remind you \(days) before it ends.")
+    }
+
+    private var currencyOptions: [String] {
+        AppSettings.currencies.contains(currencyCode) ? AppSettings.currencies : AppSettings.currencies + [currencyCode]
+    }
+
     private var pickerOptions: [Int] {
         warrantyOptions.contains(warrantyMonths) ? warrantyOptions : (warrantyOptions + [warrantyMonths]).sorted()
     }
@@ -151,6 +168,7 @@ struct PurchaseFormView: View {
         purchaseDate = purchase.purchaseDate
         priceText = purchase.price.map { String(format: "%.2f", $0).replacingOccurrences(of: ".", with: ",") } ?? ""
         warrantyMonths = purchase.warrantyMonths
+        currencyCode = purchase.currencyCode
         notes = purchase.notes
     }
 
@@ -169,7 +187,7 @@ struct PurchaseFormView: View {
         if priceText.isEmpty, let price = draft.price {
             priceText = String(format: "%.2f", price).replacingOccurrences(of: ".", with: ",")
         }
-        warrantyMonths = draft.warrantyMonths
+        if let months = draft.warrantyMonths { warrantyMonths = months }
         readNote = draft.usedAI
             ? L("Vyplněno pomocí AI v telefonu. Zkontroluj prosím údaje.", "Filled in by on-device AI. Please check the details.")
             : L("Vyplněno automaticky. Zkontroluj prosím údaje.", "Filled in automatically. Please check the details.")
@@ -192,6 +210,7 @@ struct PurchaseFormView: View {
             target.purchaseDate = purchaseDate
             target.price = parsedPrice
             target.warrantyMonths = warrantyMonths
+            target.currencyCode = currencyCode
             target.notes = notes
             target.folder = folder
         } else {
@@ -205,6 +224,7 @@ struct PurchaseFormView: View {
                 receiptImageData: image?.jpegData(compressionQuality: 0.7),
                 folder: folder
             )
+            target.currencyCode = currencyCode
             modelContext.insert(target)
         }
         try? modelContext.save()
