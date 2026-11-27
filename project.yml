@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
+  developmentLanguage: cs
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -21,11 +22,19 @@ targets:
       properties:
         CFBundleDisplayName: Záruky
         CFBundleDevelopmentRegion: cs
+        CFBundleLocalizations: [cs, en]
+        UIBackgroundModes: [remote-notification]
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSCameraUsageDescription: Fotoaparát slouží ke skenování účtenek.
         NSPhotoLibraryUsageDescription: Přístup k Fotkám slouží k výběru fotky účtenky.
         ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: Zaruky/Zaruky.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.cz.zaruky.app]
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: cz.zaruky.app

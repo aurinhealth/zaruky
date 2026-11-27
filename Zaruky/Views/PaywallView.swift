@@ -11,20 +11,20 @@ struct PaywallView: View {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 64))
                     .foregroundStyle(.tint)
-                Text("Záruky navždy")
+                Text(L("Záruky navždy", "Warranties forever"))
                     .font(.largeTitle.bold())
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Neomezený počet účtenek", systemImage: "infinity")
-                    Label("Zaplatíš jednou, žádné předplatné", systemImage: "creditcard")
-                    Label("Data zůstávají v tvém telefonu", systemImage: "lock.shield")
-                    Label("Funguje i v Rodinném sdílení", systemImage: "person.2")
+                    Label(L("Neomezený počet účtenek", "Unlimited receipts"), systemImage: "infinity")
+                    Label(L("Zaplatíš jednou, žádné předplatné", "Pay once, no subscription"), systemImage: "creditcard")
+                    Label(L("Data jen v tvém iCloudu, nikde jinde", "Your data stays in your own iCloud"), systemImage: "lock.icloud")
+                    Label(L("Funguje i v Rodinném sdílení", "Works with Family Sharing"), systemImage: "person.2")
                 }
                 .font(.body)
                 Spacer()
 
                 if store.isUnlocked {
-                    Text("Odemčeno, díky!").font(.headline)
-                    Button("Hotovo") { dismiss() }
+                    Text(L("Odemčeno, díky!", "Unlocked, thank you!")).font(.headline)
+                    Button(L("Hotovo", "Done")) { dismiss() }
                         .buttonStyle(.borderedProminent)
                 } else {
                     Button {
@@ -37,9 +37,9 @@ struct PaywallView: View {
                             if store.isPurchasing {
                                 ProgressView()
                             } else if let product = store.product {
-                                Text("Odemknout za \(product.displayPrice)")
+                                Text(L("Odemknout za ", "Unlock for ") + product.displayPrice)
                             } else {
-                                Text("Načítám…")
+                                Text(L("Načítám…", "Loading…"))
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -48,7 +48,7 @@ struct PaywallView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(store.product == nil || store.isPurchasing)
 
-                    Button("Obnovit nákup") {
+                    Button(L("Obnovit nákup", "Restore purchase")) {
                         Task { await store.restore() }
                     }
                     .font(.footnote)
@@ -61,7 +61,7 @@ struct PaywallView: View {
             .padding(24)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Zavřít") { dismiss() }
+                    Button(L("Zavřít", "Close")) { dismiss() }
                 }
             }
             .task {

@@ -8,6 +8,10 @@ struct PurchaseFormView: View {
     /// nil = new purchase
     let purchase: Purchase?
     let image: UIImage?
+    /// Folder preselected for a new purchase (the folder the list is showing).
+    var initialFolder: Folder? = nil
+
+    @Query(sort: \Folder.createdAt) private var folderQuery: [Folder]
 
     @State private var productName = ""
     @State private var storeName = ""
@@ -15,6 +19,7 @@ struct PurchaseFormView: View {
     @State private var priceText = ""
     @State private var warrantyMonths = 24
     @State private var notes = ""
+    @State private var folder: Folder?
     @State private var isReading = false
     @State private var readNote: String?
     @State private var didLoad = false
@@ -34,7 +39,7 @@ struct PurchaseFormView: View {
                         if isReading {
                             HStack {
                                 ProgressView()
-                                Text("Čtu účtenku…").foregroundStyle(.secondary)
+                                Text(L("Čtu účtenku…", "Reading the receipt…")).foregroundStyle(.secondary)
                             }
                         } else if let readNote {
                             Text(readNote).font(.footnote).foregroundStyle(.secondary)
@@ -42,39 +47,51 @@ struct PurchaseFormView: View {
                     }
                 }
 
-                Section("Nákup") {
-                    TextField("Produkt", text: $productName)
-                    TextField("Obchod", text: $storeName)
-                    DatePicker("Datum nákupu", selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
-                    TextField("Cena (Kč)", text: $priceText)
+                Section(L("Nákup", "Purchase")) {
+                    TextField(L("Produkt", "Product"), text: $productName)
+                    TextField(L("Obchod", "Store"), text: $storeName)
+                    DatePicker(L("Datum nákupu", "Purchase date"), selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
+                    TextField(L("Cena (Kč)", "Price (CZK)"), text: $priceText)
                         .keyboardType(.decimalPad)
                 }
 
                 Section {
-                    Picker("Délka záruky", selection: $warrantyMonths) {
+                    Picker(L("Délka záruky", "Warranty length"), selection: $warrantyMonths) {
                         ForEach(pickerOptions, id: \.self) { months in
-                            Text(CzechFormat.warrantyLength(months: months)).tag(months)
+                            Text(AppFormat.warrantyLength(months: months)).tag(months)
                         }
                     }
-                    LabeledContent("Konec záruky", value: CzechFormat.date(endDate))
+                    LabeledContent(L("Konec záruky", "Warranty ends"), value: AppFormat.date(endDate))
                 } header: {
-                    Text("Záruka")
+                    Text(L("Záruka", "Warranty"))
                 } footer: {
-                    Text("V EU platí na nové zboží zákonná záruka 24 měsíců. Připomenu se 30 dní před koncem.")
+                    Text(L("V EU platí na nové zboží zákonná záruka 24 měsíců. Připomenu se 30 dní před koncem.",
+                           "In the EU, new goods have a 24-month legal warranty. I'll remind you 30 days before it ends."))
                 }
 
-                Section("Poznámka") {
-                    TextField("Sériové číslo, příslušenství…", text: $notes, axis: .vertical)
+                if !folders.isEmpty {
+                    Section(L("Složka", "Folder")) {
+                        Picker(L("Složka", "Folder"), selection: $folder) {
+                            Text(L("Bez složky", "No folder")).tag(Folder?.none)
+                            ForEach(folders) { folder in
+                                Text(folder.name).tag(Optional(folder))
+                            }
+                        }
+                    }
+                }
+
+                Section(L("Poznámka", "Note")) {
+                    TextField(L("Sériové číslo, příslušenství…", "Serial number, accessories…"), text: $notes, axis: .vertical)
                 }
             }
-            .navigationTitle(purchase == nil ? "Nová účtenka" : "Upravit")
+            .navigationTitle(purchase == nil ? L("Nová účtenka", "New receipt") : L("Upravit", "Edit"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Zrušit") { dismiss() }
+                    Button(L("Zrušit", "Cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Uložit") { save() }
+                    Button(L("Uložit", "Save")) { save() }
                         .disabled(productName.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
@@ -87,6 +104,10 @@ struct PurchaseFormView: View {
         }
     }
 
+    private var folders: [Folder] {
+        folderQuery.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
     private var pickerOptions: [Int] {
         warrantyOptions.contains(warrantyMonths) ? warrantyOptions : (warrantyOptions + [warrantyMonths]).sorted()
     }
@@ -96,7 +117,11 @@ struct PurchaseFormView: View {
     }
 
     private func loadExisting() {
-        guard let purchase else { return }
+        guard let purchase else {
+            folder = initialFolder
+            return
+        }
+        folder = purchase.folder
         productName = purchase.productName
         storeName = purchase.storeName
         purchaseDate = purchase.purchaseDate
@@ -110,7 +135,7 @@ struct PurchaseFormView: View {
         defer { isReading = false }
         let text = (try? await OCRService.recognizeText(in: image)) ?? ""
         guard !text.isEmpty else {
-            readNote = "Text se nepodařilo přečíst, vyplň údaje ručně."
+            readNote = L("Text se nepodařilo přečíst, vyplň údaje ručně.", "Couldn't read the text, please fill in the details.")
             return
         }
         let draft = await ReceiptParser.parse(text)
@@ -122,8 +147,8 @@ struct PurchaseFormView: View {
         }
         warrantyMonths = draft.warrantyMonths
         readNote = draft.usedAI
-            ? "Vyplněno pomocí AI v telefonu. Zkontroluj prosím údaje."
-            : "Vyplněno automaticky. Zkontroluj prosím údaje."
+            ? L("Vyplněno pomocí AI v telefonu. Zkontroluj prosím údaje.", "Filled in by on-device AI. Please check the details.")
+            : L("Vyplněno automaticky. Zkontroluj prosím údaje.", "Filled in automatically. Please check the details.")
     }
 
     private var parsedPrice: Double? {
@@ -144,6 +169,7 @@ struct PurchaseFormView: View {
             target.price = parsedPrice
             target.warrantyMonths = warrantyMonths
             target.notes = notes
+            target.folder = folder
         } else {
             target = Purchase(
                 productName: name,
@@ -152,7 +178,8 @@ struct PurchaseFormView: View {
                 price: parsedPrice,
                 warrantyMonths: warrantyMonths,
                 notes: notes,
-                receiptImageData: image?.jpegData(compressionQuality: 0.7)
+                receiptImageData: image?.jpegData(compressionQuality: 0.7),
+                folder: folder
             )
             modelContext.insert(target)
         }

@@ -52,6 +52,8 @@ jobs:
         run: |
           brew install xcodegen
           xcodegen generate
+          # Build number = run number, written literally so every upload is unique.
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Zaruky/Info.plist
 
       - name: Write API key
         if: steps.check.outputs.ready == 'true'
@@ -65,7 +67,9 @@ jobs:
           fi
           echo "ASC_KEY_PATH=$KEY" >> "$GITHUB_ENV"
 
-      - name: Archive (unsigned)
+      # Ad-hoc signed ("-") so the iCloud entitlements are embedded in the archive;
+      # the export step below re-signs it with a cloud-managed distribution certificate.
+      - name: Archive (ad-hoc signed, with entitlements)
         if: steps.check.outputs.ready == 'true'
         run: |
           xcodebuild archive \
@@ -76,8 +80,17 @@ jobs:
             -archivePath "$RUNNER_TEMP/Zaruky.xcarchive" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            PROVISIONING_PROFILE_SPECIFIER= \
+            CODE_SIGNING_REQUIRED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             -quiet
+          APP="$RUNNER_TEMP/Zaruky.xcarchive/Products/Applications/Zaruky.app"
+          echo "Build number: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")"
+          codesign -d --entitlements - "$APP"
+          codesign -d --entitlements - "$APP" 2>&1 | grep -q "iCloud.cz.zaruky.app" \
+            || { echo "::error::iCloud entitlements missing from the archive"; exit 1; }
 
       - name: Sign with cloud signing and upload to TestFlight
         if: steps.check.outputs.ready == 'true'

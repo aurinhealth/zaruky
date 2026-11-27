@@ -10,9 +10,9 @@ enum WarrantyStatus: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .expiringSoon: "Brzy končí"
-        case .active: "Platná záruka"
-        case .expired: "Po záruce"
+        case .expiringSoon: L("Brzy končí", "Ending soon")
+        case .active: L("Platná záruka", "Under warranty")
+        case .expired: L("Po záruce", "Expired")
         }
     }
 }
@@ -29,6 +29,7 @@ final class Purchase {
     var notes: String = ""
     @Attribute(.externalStorage) var receiptImageData: Data?
     var createdAt: Date = Date()
+    var folder: Folder?
 
     init(
         productName: String,
@@ -37,7 +38,8 @@ final class Purchase {
         price: Double?,
         warrantyMonths: Int,
         notes: String = "",
-        receiptImageData: Data? = nil
+        receiptImageData: Data? = nil,
+        folder: Folder? = nil
     ) {
         self.id = UUID()
         self.productName = productName
@@ -48,6 +50,7 @@ final class Purchase {
         self.notes = notes
         self.receiptImageData = receiptImageData
         self.createdAt = Date()
+        self.folder = folder
     }
 
     var warrantyEndDate: Date {

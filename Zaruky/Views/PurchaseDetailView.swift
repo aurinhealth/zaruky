@@ -23,9 +23,9 @@ struct PurchaseDetailView: View {
                     ProgressView(value: purchase.elapsedFraction)
                         .tint(purchase.status == .expiringSoon ? Color.orange : Color.accentColor)
                     HStack {
-                        Text(CzechFormat.date(purchase.purchaseDate))
+                        Text(AppFormat.date(purchase.purchaseDate))
                         Spacer()
-                        Text(CzechFormat.date(purchase.warrantyEndDate))
+                        Text(AppFormat.date(purchase.warrantyEndDate))
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -33,19 +33,20 @@ struct PurchaseDetailView: View {
                 .padding(.vertical, 4)
             }
 
-            Section("Nákup") {
-                LabeledContent("Obchod", value: purchase.storeName.isEmpty ? "—" : purchase.storeName)
-                LabeledContent("Datum", value: CzechFormat.date(purchase.purchaseDate))
-                LabeledContent("Cena", value: CzechFormat.price(purchase.price, currency: purchase.currencyCode))
-                LabeledContent("Záruka", value: CzechFormat.warrantyLength(months: purchase.warrantyMonths))
+            Section(L("Nákup", "Purchase")) {
+                LabeledContent(L("Obchod", "Store"), value: purchase.storeName.isEmpty ? "—" : purchase.storeName)
+                LabeledContent(L("Datum", "Date"), value: AppFormat.date(purchase.purchaseDate))
+                LabeledContent(L("Cena", "Price"), value: AppFormat.price(purchase.price, currency: purchase.currencyCode))
+                LabeledContent(L("Záruka", "Warranty"), value: AppFormat.warrantyLength(months: purchase.warrantyMonths))
+                LabeledContent(L("Složka", "Folder"), value: purchase.folder?.name ?? L("Bez složky", "No folder"))
             }
 
             if !purchase.notes.isEmpty {
-                Section("Poznámka") { Text(purchase.notes) }
+                Section(L("Poznámka", "Note")) { Text(purchase.notes) }
             }
 
             if let receiptImage {
-                Section("Účtenka") {
+                Section(L("Účtenka", "Receipt")) {
                     Button { showImage = true } label: {
                         Image(uiImage: receiptImage)
                             .resizable()
@@ -57,21 +58,21 @@ struct PurchaseDetailView: View {
 
                     ShareLink(
                         item: Image(uiImage: receiptImage),
-                        preview: SharePreview("Účtenka – \(purchase.productName)", image: Image(uiImage: receiptImage))
+                        preview: SharePreview(L("Účtenka – ", "Receipt – ") + purchase.productName, image: Image(uiImage: receiptImage))
                     ) {
-                        Label("Sdílet účtenku k reklamaci", systemImage: "square.and.arrow.up")
+                        Label(L("Sdílet účtenku k reklamaci", "Share receipt for a claim"), systemImage: "square.and.arrow.up")
                     }
                 }
             }
 
             Section {
-                Button("Smazat", role: .destructive) { confirmDelete = true }
+                Button(L("Smazat", "Delete"), role: .destructive) { confirmDelete = true }
             }
         }
-        .navigationTitle(purchase.productName.isEmpty ? "Detail" : purchase.productName)
+        .navigationTitle(purchase.productName.isEmpty ? L("Detail", "Details") : purchase.productName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            Button("Upravit") { showEdit = true }
+            Button(L("Upravit", "Edit")) { showEdit = true }
         }
         .sheet(isPresented: $showEdit) {
             PurchaseFormView(purchase: purchase, image: nil)
@@ -81,16 +82,16 @@ struct PurchaseDetailView: View {
                 ReceiptImageViewer(image: receiptImage)
             }
         }
-        .confirmationDialog("Smazat účtenku?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Smazat", role: .destructive) { delete() }
+        .confirmationDialog(L("Smazat účtenku?", "Delete receipt?"), isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button(L("Smazat", "Delete"), role: .destructive) { delete() }
         }
     }
 
     private var statusText: String {
         let days = purchase.daysRemaining
-        if days < 0 { return "Záruka skončila" }
-        if days == 0 { return "Záruka končí dnes" }
-        return "Záruka ještě " + CzechFormat.remaining(days: days)
+        if days < 0 { return L("Záruka skončila", "Warranty has ended") }
+        if days == 0 { return L("Záruka končí dnes", "Warranty ends today") }
+        return L("Záruka ještě ", "Warranty left: ") + AppFormat.remaining(days: days)
     }
 
     private func delete() {
@@ -123,7 +124,7 @@ struct ReceiptImageViewer: View {
             .background(Color.black)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Hotovo") { dismiss() }
+                    Button(L("Hotovo", "Done")) { dismiss() }
                 }
             }
         }

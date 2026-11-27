@@ -22,9 +22,12 @@ enum NotificationService {
         guard let fireDate = cal.date(from: comps), fireDate > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        let name = purchase.productName.isEmpty ? "Nákup" : purchase.productName
-        content.title = "Záruka brzy končí"
-        content.body = "\(name): záruka skončí za \(CzechFormat.days(daysBefore)), \(CzechFormat.date(purchase.warrantyEndDate))."
+        let name = purchase.productName.isEmpty ? L("Nákup", "Purchase") : purchase.productName
+        let days = AppFormat.days(daysBefore)
+        let end = AppFormat.date(purchase.warrantyEndDate)
+        content.title = L("Záruka brzy končí", "Warranty ending soon")
+        content.body = L("\(name): záruka skončí za \(days), \(end).",
+                         "\(name): the warranty ends in \(days), on \(end).")
         content.sound = .default
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
@@ -34,5 +37,17 @@ enum NotificationService {
     static func cancel(for purchase: Purchase) {
         UNUserNotificationCenter.current()
             .removePendingNotificationRequests(withIdentifiers: [purchase.id.uuidString])
+    }
+
+    /// Reminders are local to each device, so receipts that arrive through iCloud
+    /// (or are deleted on another device) are reconciled here.
+    @MainActor
+    static func sync(with purchases: [Purchase]) async {
+        let center = UNUserNotificationCenter.current()
+        let ids = Set(purchases.map { $0.id.uuidString })
+        let pending = await center.pendingNotificationRequests().map(\.identifier)
+        let stale = pending.filter { !ids.contains($0) }
+        if !stale.isEmpty { center.removePendingNotificationRequests(withIdentifiers: stale) }
+        for purchase in purchases { schedule(for: purchase) }
     }
 }
