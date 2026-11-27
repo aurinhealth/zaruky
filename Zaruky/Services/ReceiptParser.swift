@@ -133,12 +133,14 @@ enum ReceiptParser {
     }
 
     private static func warrantyMonths(in text: String) -> Int? {
-        let pattern = #"záruk[a-z]*\D{0,10}(\d{1,3})\s*(měs|mes|m\b|let|rok)"#
+        let pattern = #"(?:záruk|zaruk|garanc|warrant)\w*\D{0,12}(\d{1,3})\s*(měs|mes|m\b|let|rok|month|mo\b|year|yr)"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
         let ns = text as NSString
         guard let match = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
               let n = Int(ns.substring(with: match.range(at: 1))) else { return nil }
         let unit = ns.substring(with: match.range(at: 2)).lowercased()
-        return (unit.hasPrefix("let") || unit.hasPrefix("rok")) ? n * 12 : n
+        let years = unit.hasPrefix("let") || unit.hasPrefix("rok") || unit.hasPrefix("year") || unit.hasPrefix("yr")
+        let months = years ? n * 12 : n
+        return (1...240).contains(months) ? months : nil
     }
 }

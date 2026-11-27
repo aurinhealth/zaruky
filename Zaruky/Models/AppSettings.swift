@@ -17,7 +17,16 @@ enum AppSettings {
 
     static let reminderDayOptions = [7, 14, 30, 60, 90]
     static let warrantyOptions = [6, 12, 24, 36, 48, 60]
-    static let currencies = ["CZK", "EUR", "USD", "GBP", "PLN"]
+    /// Currencies people around here actually pay in, shown first and in the receipt form.
+    static let commonCurrencies = ["CZK", "EUR", "USD", "GBP", "PLN", "HUF", "CHF"]
+
+    /// Every currency iOS knows, common ones first, the rest sorted by name in the app language.
+    static let allCurrencies: [String] = {
+        let rest = Locale.commonISOCurrencyCodes
+            .filter { !commonCurrencies.contains($0) }
+            .sorted { name(for: $0).localizedStandardCompare(name(for: $1)) == .orderedAscending }
+        return commonCurrencies + rest
+    }()
 
     private static var store: UserDefaults { .standard }
 
@@ -47,6 +56,8 @@ enum AppSettings {
         case "USD": "$"
         case "GBP": "£"
         case "PLN": "zł"
+        case "HUF": "Ft"
+        case "CHF": "CHF"
         default: code
         }
     }
