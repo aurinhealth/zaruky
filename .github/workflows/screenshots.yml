@@ -1,7 +1,7 @@
 name: Screenshots
 
 # Builds the app for the simulator, opens each main screen with sample data (-demo)
-# in Czech and English, and saves the screenshots as an artifact and on the
+# in every app language, and saves the screenshots as an artifact and on the
 # `screenshots` branch (screenshots/<branch>/...), so they can be viewed without a Mac.
 on:
   pull_request:
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   screenshots:
     runs-on: macos-26
-    timeout-minutes: 40
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -73,17 +73,23 @@ jobs:
           xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 \
             --cellularMode active --cellularBars 4 --wifiBars 3
           mkdir -p shots
-          for lang in cs en de; do
+          locale_for() {
+            case $1 in
+              cs) echo cs_CZ;; en) echo en_US;; de) echo de_DE;; sk) echo sk_SK;; pl) echo pl_PL;;
+              fr) echo fr_FR;; es) echo es_ES;; it) echo it_IT;; pt) echo pt_BR;; nl) echo nl_NL;;
+            esac
+          }
+          for lang in cs en de sk pl fr es it pt nl; do
             for screen in list detail folder form paywall settings viewer empty; do
               xcrun simctl terminate "$UDID" cz.zaruky.app 2>/dev/null || true
               xcrun simctl launch "$UDID" cz.zaruky.app -demo -demoScreen "$screen" \
-                -AppleLanguages "($lang)" -AppleLocale "$(case $lang in en) echo en_GB;; de) echo de_DE;; *) echo cs_CZ;; esac)"
+                -AppleLanguages "($lang)" -AppleLocale "$(locale_for $lang)"
               sleep 6
               xcrun simctl io "$UDID" screenshot "shots/${lang}-${screen}.png"
             done
             xcrun simctl ui "$UDID" appearance dark
             xcrun simctl terminate "$UDID" cz.zaruky.app 2>/dev/null || true
-            xcrun simctl launch "$UDID" cz.zaruky.app -demo -demoScreen list -AppleLanguages "($lang)"
+            xcrun simctl launch "$UDID" cz.zaruky.app -demo -demoScreen list -AppleLanguages "($lang)" -AppleLocale "$(locale_for $lang)"
             sleep 6
             xcrun simctl io "$UDID" screenshot "shots/${lang}-list-dark.png"
             xcrun simctl ui "$UDID" appearance light

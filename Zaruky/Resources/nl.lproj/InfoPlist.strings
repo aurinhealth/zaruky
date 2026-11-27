@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "Garantiewachter";
+"NSCameraUsageDescription" = "De camera wordt gebruikt om bonnen te scannen.";
+"NSPhotoLibraryUsageDescription" = "Met toegang tot Foto’s kun je een foto van een bon kiezen.";

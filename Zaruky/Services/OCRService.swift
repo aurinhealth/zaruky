@@ -10,7 +10,7 @@ enum OCRService {
             let request = VNRecognizeTextRequest()
             request.recognitionLevel = .accurate
             request.usesLanguageCorrection = true
-            request.recognitionLanguages = L10n.isGerman ? ["de-DE", "en-US", "cs-CZ"] : ["cs-CZ", "en-US", "de-DE"]
+            request.recognitionLanguages = OCRService.languages(for: request)
             let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation)
             try handler.perform([request])
             let observations = request.results ?? []
@@ -19,7 +19,18 @@ enum OCRService {
                 .joined(separator: "\n")
         }.value
     }
-}
+
+    /// The app language first, then English, German and Czech, limited to what Vision can read
+    /// on this iOS version, since an unsupported code can make the request fail.
+    private static func languages(for request: VNRecognizeTextRequest) -> [String] {
+        let supported = (try? request.supportedRecognitionLanguages()) ?? ["en-US"]
+        var wanted = [L10n.language.rawValue]
+        for code in ["en", "de", "cs"] where !wanted.contains(code) { wanted.append(code) }
+        let picked = wanted.compactMap { code in
+            supported.first { $0.lowercased().hasPrefix(code + "-") || $0.lowercased() == code }
+        }
+        return picked.isEmpty ? ["en-US"] : picked
+    }
 
 extension CGImagePropertyOrientation {
     init(_ orientation: UIImage.Orientation) {
