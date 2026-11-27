@@ -237,36 +237,47 @@ struct PurchaseDetailView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(L("Zobrazit účtenku", "View receipt"))
 
-                ShareLink(
-                    items: claimImages,
-                    subject: Text(L("Reklamace – ", "Claim – ") + purchase.productName),
-                    message: Text(claimMessage),
-                    preview: { image in SharePreview(L("Účtenka – ", "Receipt – ") + purchase.productName, image: image) }
-                ) {
-                    Label(L("Poslat účtenku k reklamaci", "Send receipt for a claim"), systemImage: "square.and.arrow.up")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                }
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
+                claimShareButton
             }
             .padding(14)
             .card()
         } else {
-            HStack(spacing: 12) {
-                Image(systemName: "doc.badge.plus")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                Text(L("K tomuhle nákupu nemáš fotku účtenky. Při reklamaci se hodí.",
-                       "There's no photo of the receipt for this purchase. It helps with a claim."))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Image(systemName: "doc.badge.plus")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                    Text(L("K tomuhle nákupu nemáš fotku účtenky. Při reklamaci se hodí.",
+                           "There's no photo of the receipt for this purchase. It helps with a claim."))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                // The warranty card or other documents can still go to the store.
+                if !claimImages.isEmpty { claimShareButton }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .card()
         }
+    }
+
+    /// Sends the receipt, the other documents and the details to the store.
+    private var claimShareButton: some View {
+        ShareLink(
+            items: claimImages,
+            subject: Text(L("Reklamace – ", "Claim – ") + purchase.productName),
+            message: Text(claimMessage),
+            preview: { image in SharePreview(L("Reklamace – ", "Claim – ") + purchase.productName, image: image) }
+        ) {
+            Label(receiptImage == nil ? L("Poslat doklady k reklamaci", "Send documents for a claim")
+                                      : L("Poslat účtenku k reklamaci", "Send receipt for a claim"),
+                  systemImage: "square.and.arrow.up")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+        }
+        .buttonStyle(.glassProminent)
+        .controlSize(.large)
     }
 
     @ViewBuilder
