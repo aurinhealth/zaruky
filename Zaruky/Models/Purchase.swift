@@ -10,9 +10,9 @@ enum WarrantyStatus: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .expiringSoon: L("Brzy končí", "Ending soon")
-        case .active: L("Platná záruka", "Under warranty")
-        case .expired: L("Po záruce", "Expired")
+        case .expiringSoon: L("Brzy končí", "Ending soon", "Endet bald")
+        case .active: L("Platná záruka", "Under warranty", "Mit Garantie")
+        case .expired: L("Po záruce", "Expired", "Abgelaufen")
         }
     }
 }

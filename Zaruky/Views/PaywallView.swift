@@ -14,8 +14,8 @@ struct PaywallView: View {
                 VStack(spacing: 24) {
                     hero
                     VStack(spacing: 8) {
-                        Text(store.isUnlocked ? L("Odemčeno, díky!", "Unlocked, thank you!")
-                                              : L("Hlídej všechny záruky", "Keep every warranty safe"))
+                        Text(store.isUnlocked ? L("Odemčeno, díky!", "Unlocked, thank you!", "Freigeschaltet, danke!")
+                                              : L("Hlídej všechny záruky", "Keep every warranty safe", "Jede Garantie sicher aufbewahrt"))
                             .font(.largeTitle.bold())
                             .multilineTextAlignment(.center)
                         Text(subtitle)
@@ -25,18 +25,17 @@ struct PaywallView: View {
                     }
 
                     VStack(spacing: 0) {
-                        benefit("infinity", .green, L("Neomezeně účtenek", "Unlimited receipts"),
-                                L("Elektronika, spotřebiče, nábytek, kolo…", "Electronics, appliances, furniture, bikes…"))
+                        benefit("infinity", .green, L("Neomezeně účtenek", "Unlimited receipts", "Unbegrenzt viele Belege"),
+                                L("Elektronika, spotřebiče, nábytek, kolo…", "Electronics, appliances, furniture, bikes…", "Elektronik, Haushaltsgeräte, Möbel, Fahrräder…"))
                         Divider().padding(.leading, 66)
-                        benefit("bell.badge.fill", .orange, L("Připomínky před koncem záruky", "Reminders before warranties end"),
-                                L("U každé účtenky, \(AppFormat.days(AppSettings.reminderDays)) předem.",
-                                  "For every receipt, \(AppFormat.days(AppSettings.reminderDays)) ahead."))
+                        benefit("bell.badge.fill", .orange, L("Připomínky před koncem záruky", "Reminders before warranties end", "Erinnerungen vor Garantieende"),
+                                L("U každé účtenky, \(AppFormat.days(AppSettings.reminderDays)) předem.", "For every receipt, \(AppFormat.days(AppSettings.reminderDays)) ahead.", "Für jeden Beleg, \(AppFormat.days(AppSettings.reminderDays)) vorher."))
                         Divider().padding(.leading, 66)
-                        benefit("lock.icloud.fill", .blue, L("Jen ve tvém iCloudu", "Only in your iCloud"),
-                                L("Žádný účet, žádné servery třetích stran.", "No account, no third-party servers."))
+                        benefit("lock.icloud.fill", .blue, L("Jen ve tvém iCloudu", "Only in your iCloud", "Nur in deiner iCloud"),
+                                L("Žádný účet, žádné servery třetích stran.", "No account, no third-party servers.", "Kein Konto, keine fremden Server."))
                         Divider().padding(.leading, 66)
-                        benefit("person.2.fill", .purple, L("Pro celou rodinu", "For the whole family"),
-                                L("Funguje v Rodinném sdílení.", "Works with Family Sharing."))
+                        benefit("person.2.fill", .purple, L("Pro celou rodinu", "For the whole family", "Für die ganze Familie"),
+                                L("Funguje v Rodinném sdílení.", "Works with Family Sharing.", "Funktioniert mit der Familienfreigabe."))
                     }
                     .card()
                 }
@@ -60,14 +59,12 @@ struct PaywallView: View {
 
     private var subtitle: String {
         if store.isUnlocked {
-            return L("Teď můžeš ukládat neomezeně účtenek.", "You can now save as many receipts as you like.")
+            return L("Teď můžeš ukládat neomezeně účtenek.", "You can now save as many receipts as you like.", "Du kannst jetzt beliebig viele Belege speichern.")
         }
         if usedCount >= PurchaseStore.freeLimit {
-            return L("Využil jsi \(PurchaseStore.freeLimit) účtenek zdarma. Jednou zaplatíš a máš klid napořád.",
-                     "You've used your \(PurchaseStore.freeLimit) free receipts. Pay once and you're set for good.")
+            return L("Využil jsi \(PurchaseStore.freeLimit) účtenek zdarma. Jednou zaplatíš a máš klid napořád.", "You've used your \(PurchaseStore.freeLimit) free receipts. Pay once and you're set for good.", "Deine \(PurchaseStore.freeLimit) Gratis-Belege sind aufgebraucht. Einmal zahlen, und es ist für immer erledigt.")
         }
-        return L("Jednou zaplatíš a máš klid napořád. Žádné předplatné.",
-                 "Pay once and you're set for good. No subscription.")
+        return L("Jednou zaplatíš a máš klid napořád. Žádné předplatné.", "Pay once and you're set for good. No subscription.", "Einmal zahlen, und es ist für immer erledigt. Kein Abo.")
     }
 
     private var hero: some View {
@@ -113,7 +110,7 @@ struct PaywallView: View {
         VStack(spacing: 10) {
             if store.isUnlocked {
                 Button { dismiss() } label: {
-                    Text(L("Hotovo", "Done"))
+                    Text(L("Hotovo", "Done", "Fertig"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
@@ -122,8 +119,7 @@ struct PaywallView: View {
                 .controlSize(.large)
             } else {
                 if store.loadFailed && !DemoMode.isOn {
-                    Text(L("Nabídku se teď nepodařilo načíst z App Storu. Zkontroluj připojení k internetu a zkus to znovu.",
-                           "Couldn't load the offer from the App Store. Check your internet connection and try again."))
+                    Text(L("Nabídku se teď nepodařilo načíst z App Storu. Zkontroluj připojení k internetu a zkus to znovu.", "Couldn't load the offer from the App Store. Check your internet connection and try again.", "Das Angebot aus dem App Store ließ sich nicht laden. Prüf deine Internetverbindung und versuch es noch einmal."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -142,11 +138,11 @@ struct PaywallView: View {
                         if store.isPurchasing || store.isLoading {
                             ProgressView()
                         } else if let product = store.product {
-                            Text(L("Odemknout navždy za ", "Unlock forever for ") + product.displayPrice)
+                            Text(L("Odemknout navždy za ", "Unlock forever for ", "Für immer freischalten für ") + product.displayPrice)
                         } else if DemoMode.isOn {
-                            Text(L("Odemknout navždy za 129 Kč", "Unlock forever for CZK 129"))
+                            Text(L("Odemknout navždy za 129 Kč", "Unlock forever for CZK 129", "Für immer freischalten für 4,99 €"))
                         } else {
-                            Label(L("Zkusit znovu", "Try again"), systemImage: "arrow.clockwise")
+                            Label(L("Zkusit znovu", "Try again", "Erneut versuchen"), systemImage: "arrow.clockwise")
                         }
                     }
                     .font(.headline)
@@ -158,9 +154,9 @@ struct PaywallView: View {
                 .disabled(store.isPurchasing || store.isLoading)
 
                 HStack(spacing: 6) {
-                    Text(L("Jednorázová platba", "One-time payment"))
+                    Text(L("Jednorázová platba", "One-time payment", "Einmalzahlung"))
                     Text("·")
-                    Button(L("Obnovit nákup", "Restore purchase")) {
+                    Button(L("Obnovit nákup", "Restore purchase", "Kauf wiederherstellen")) {
                         Task { await store.restore() }
                     }
                 }
@@ -168,9 +164,9 @@ struct PaywallView: View {
                 .foregroundStyle(.secondary)
 
                 HStack(spacing: 6) {
-                    Button(L("Podmínky", "Terms")) { openURL(AppInfo.termsURL) }
+                    Button(L("Podmínky", "Terms", "Bedingungen")) { openURL(AppInfo.termsURL) }
                     Text("·")
-                    Button(L("Soukromí", "Privacy")) { showPrivacy = true }
+                    Button(L("Soukromí", "Privacy", "Datenschutz")) { showPrivacy = true }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)

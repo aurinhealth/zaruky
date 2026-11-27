@@ -10,7 +10,7 @@ enum OCRService {
             let request = VNRecognizeTextRequest()
             request.recognitionLevel = .accurate
             request.usesLanguageCorrection = true
-            request.recognitionLanguages = ["cs-CZ", "en-US"]
+            request.recognitionLanguages = L10n.isGerman ? ["de-DE", "en-US", "cs-CZ"] : ["cs-CZ", "en-US", "de-DE"]
             let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation)
             try handler.perform([request])
             let observations = request.results ?? []

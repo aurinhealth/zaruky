@@ -31,22 +31,25 @@ enum DemoMode {
             return cal.date(byAdding: .day, value: -days, to: d) ?? d
         }
         let en = L10n.isEnglish
-        let electronics = Folder(name: en ? "Electronics" : "Elektronika")
-        let home = Folder(name: en ? "Home" : "Domácnost")
+        let de = L10n.isGerman
+        let electronics = Folder(name: de ? "Elektronik" : en ? "Electronics" : "Elektronika")
+        let home = Folder(name: de ? "Haushalt" : en ? "Home" : "Domácnost")
         context.insert(electronics)
         context.insert(home)
 
         let items: [(String, String, Date, Double, Int, Folder?)] = [
             ("iPhone 16 Pro", "Alza.cz", ago(months: 23, days: 12), 32_990, 24, electronics),
-            (en ? "Bosch washing machine" : "Pračka Bosch Serie 6", "Datart", ago(months: 4), 14_490, 36, home),
+            (de ? "Bosch Waschmaschine Serie 6" : en ? "Bosch washing machine" : "Pračka Bosch Serie 6", "Datart", ago(months: 4), 14_490, 36, home),
             ("MacBook Air M4", "iStyle", ago(months: 7), 29_990, 24, electronics),
             ("Sony WH-1000XM6", "Alza.cz", ago(months: 23, days: 2), 9_490, 24, electronics),
-            (en ? "De'Longhi coffee machine" : "Kávovar De'Longhi Magnifica", "Mall.cz", ago(months: 14), 11_990, 24, home),
+            (de ? "De'Longhi Kaffeevollautomat" : en ? "De'Longhi coffee machine" : "Kávovar De'Longhi Magnifica", "Mall.cz", ago(months: 14), 11_990, 24, home),
             ("Dyson V15", "Electro World", ago(months: 30), 17_990, 24, home),
         ]
         for (name, store, date, price, months, folder) in items {
-            let p = Purchase(productName: name, storeName: store, purchaseDate: date,
-                             price: price, warrantyMonths: months, folder: folder)
+            // German screenshots show German shops and euro prices.
+            let p = Purchase(productName: name, storeName: de ? germanStore(store) : store, purchaseDate: date,
+                             price: de ? (price / 25).rounded() - 0.01 : price, warrantyMonths: months, folder: folder)
+            if de { p.currencyCode = "EUR" }
             context.insert(p)
             if name.hasPrefix("Sony") {
                 p.serialNumber = "S01-5824736-B"
@@ -59,6 +62,17 @@ enum DemoMode {
         try? context.save()
     }
 
+    private static func germanStore(_ store: String) -> String {
+        switch store {
+        case "Alza.cz": "MediaMarkt"
+        case "Datart": "Saturn"
+        case "iStyle": "Apple Store"
+        case "Mall.cz": "Otto"
+        case "Electro World": "Amazon"
+        default: store
+        }
+    }
+
     /// A small warranty card for the detail screenshot.
     static var sampleWarrantyCard: UIImage {
         let size = CGSize(width: 900, height: 620)
@@ -69,8 +83,8 @@ enum DemoMode {
             ctx.fill(CGRect(origin: .zero, size: size))
             let big: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 52), .foregroundColor: UIColor.black]
             let body: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 30), .foregroundColor: UIColor.darkGray]
-            NSAttributedString(string: L10n.isEnglish ? "WARRANTY CARD" : "ZÁRUČNÍ LIST", attributes: big).draw(at: CGPoint(x: 60, y: 60))
-            for (i, line) in ["Sony WH-1000XM6", "S/N: S01-5824736-B", L10n.isEnglish ? "Warranty: 24 months" : "Záruka: 24 měsíců"].enumerated() {
+            NSAttributedString(string: L("ZÁRUČNÍ LIST", "WARRANTY CARD", "GARANTIESCHEIN"), attributes: big).draw(at: CGPoint(x: 60, y: 60))
+            for (i, line) in ["Sony WH-1000XM6", "S/N: S01-5824736-B", L("Záruka: 24 měsíců", "Warranty: 24 months", "Garantie: 24 Monate")].enumerated() {
                 NSAttributedString(string: line, attributes: body).draw(at: CGPoint(x: 60, y: 190 + CGFloat(i) * 60))
             }
             UIColor.gray.setStroke()
