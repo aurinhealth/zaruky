@@ -30,6 +30,8 @@ struct ZarukyApp: App {
             PurchaseListView()
                 .environment(store)
                 .tint(Theme.brand)
+                // Date pickers and other system controls follow the app language, like the rest of the app.
+                .environment(\.locale, L10n.locale)
                 // Notifications are asked for after the first saved receipt (PurchaseListView),
                 // when it's clear what the reminder is for.
         }

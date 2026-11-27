@@ -210,4 +210,16 @@ enum DemoMode {
             }
         }
     }
+
+    /// The unlock price in the demo currency, close to the App Store price tiers.
+    static var unlockPrice: String {
+        let currency = DemoData.current.currency
+        let value: Double = switch currency {
+        case "CZK": 129
+        case "PLN": 21.99
+        case "BRL": 27.90
+        default: 4.99
+        }
+        return AppFormat.price(value, currency: currency)
+    }
 }

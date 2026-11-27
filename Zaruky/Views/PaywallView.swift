@@ -137,10 +137,11 @@ struct PaywallView: View {
                     Group {
                         if store.isPurchasing || store.isLoading {
                             ProgressView()
+                        } else if DemoMode.isOn {
+                            // Store screenshots show the local price, not the StoreKit test storefront's.
+                            Text(L("Odemknout navždy za ", "Unlock forever for ", "Für immer freischalten für ") + DemoMode.unlockPrice)
                         } else if let product = store.product {
                             Text(L("Odemknout navždy za ", "Unlock forever for ", "Für immer freischalten für ") + product.displayPrice)
-                        } else if DemoMode.isOn {
-                            Text(L("Odemknout navždy za 129 Kč", "Unlock forever for CZK 129", "Für immer freischalten für 4,99 €"))
                         } else {
                             Label(L("Zkusit znovu", "Try again", "Erneut versuchen"), systemImage: "arrow.clockwise")
                         }
