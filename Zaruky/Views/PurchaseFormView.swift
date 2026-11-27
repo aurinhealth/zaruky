@@ -197,9 +197,21 @@ struct PurchaseFormView: View {
             priceText = String(format: "%.2f", price).replacingOccurrences(of: ".", with: ",")
         }
         if let months = draft.warrantyMonths { warrantyMonths = months }
+        var suggestedFolder: String?
+        if folder == nil, !folders.isEmpty {
+            suggestedFolder = await FolderSuggester.suggest(product: productName, store: storeName,
+                                                            folders: folders.map(\.name))
+            if let suggestedFolder, folder == nil {
+                folder = folders.first { $0.name == suggestedFolder }
+            }
+        }
         readNote = draft.usedAI
             ? L("Vyplněno pomocí AI v telefonu. Zkontroluj prosím údaje.", "Filled in by on-device AI. Please check the details.")
             : L("Vyplněno automaticky. Zkontroluj prosím údaje.", "Filled in automatically. Please check the details.")
+        if let suggestedFolder {
+            readNote = (readNote ?? "") + " " + L("Složku „\(suggestedFolder)“ jsem navrhl podle produktu.",
+                                                  "Suggested the “\(suggestedFolder)” folder from the product.")
+        }
     }
 
     private var parsedPrice: Double? {
