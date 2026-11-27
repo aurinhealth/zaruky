@@ -10,6 +10,9 @@ struct PurchaseDetailView: View {
     @State private var showEdit = false
     @State private var showImage = false
     @State private var confirmDelete = false
+    @State private var receiptSource: ImageSource?
+    @State private var notificationsDenied = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private var receiptImage: UIImage? {
         purchase.receiptImageData.flatMap { UIImage(data: $0) }
@@ -24,6 +27,9 @@ struct PurchaseDetailView: View {
             VStack(spacing: 16) {
                 header
                 statusCard
+                if notificationsDenied && AppSettings.remindersOn && purchase.status != .expired {
+                    remindersOffCard
+                }
                 infoCard
                 if !purchase.notes.isEmpty { notesCard }
                 receiptCard
@@ -50,11 +56,16 @@ struct PurchaseDetailView: View {
                 ReceiptImageViewer(image: receiptImage)
             }
         }
-        .confirmationDialog(L("Smazat účtenku?", "Delete receipt?"), isPresented: $confirmDelete, titleVisibility: .visible) {
+        .alert(L("Smazat účtenku?", "Delete receipt?"), isPresented: $confirmDelete) {
+            Button(L("Zrušit", "Cancel"), role: .cancel) {}
             Button(L("Smazat", "Delete"), role: .destructive) { delete() }
         } message: {
             Text(L("Účtenka i připomínka zmizí ze všech tvých zařízení.",
                    "The receipt and its reminder are removed from all your devices."))
+        }
+        .imageSourcePicker($receiptSource) { setReceipt($0) }
+        .task(id: scenePhase) {
+            if scenePhase == .active { notificationsDenied = await NotificationService.isDenied() }
         }
     }
 
@@ -78,10 +89,44 @@ struct PurchaseDetailView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .labelStyle(.titleAndIcon)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(headerAccessibility)
             }
         }
         .padding(.top, 8)
         .frame(maxWidth: .infinity)
+    }
+
+    private var headerAccessibility: String {
+        var parts: [String] = []
+        if !purchase.storeName.isEmpty { parts.append(L("Obchod \(purchase.storeName)", "Store \(purchase.storeName)")) }
+        if let folder = purchase.folder { parts.append(L("složka \(folder.name)", "folder \(folder.name)")) }
+        return parts.joined(separator: ", ")
+    }
+
+    /// Reminders are on in the app, but iOS won't deliver them.
+    private var remindersOffCard: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "bell.slash.fill")
+                .font(.title3)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L("Upozornění jsou v iOS vypnutá, takže připomínka konce záruky nepřijde.",
+                       "Notifications are off in iOS, so the warranty reminder won't arrive."))
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(L("Zapnout v Nastavení", "Turn on in Settings")) {
+                    if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                .font(.subheadline.weight(.semibold))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .card()
     }
 
     private var statusCard: some View {
@@ -92,7 +137,8 @@ struct PurchaseDetailView: View {
                 WarrantyRing(remaining: 1 - purchase.elapsedFraction, color: status.color, lineWidth: 9)
                 VStack(spacing: 0) {
                     Text(ringValue(days))
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .font(.title.bold())
+                        .fontDesign(.rounded)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
                     Text(ringUnit(days))
@@ -243,17 +289,30 @@ struct PurchaseDetailView: View {
             .card()
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                    Text(L("K tomuhle nákupu nemáš fotku účtenky. Při reklamaci se hodí.",
-                           "There's no photo of the receipt for this purchase. It helps with a claim."))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                Menu {
+                    ImageSourceButtons { receiptSource = $0 }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc.badge.plus")
+                            .font(.title3)
+                            .foregroundStyle(Theme.brand)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("Přidat fotku účtenky", "Add a receipt photo"))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Theme.brand)
+                            Text(L("K tomuhle nákupu ji zatím nemáš. Při reklamaci se hodí.",
+                                   "This purchase doesn't have one yet. It helps with a claim."))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(.rect)
                 }
-                // The warranty card or other documents can still go to the store.
-                if !claimImages.isEmpty { claimShareButton }
+                .buttonStyle(.plain)
+                // The details, and any other documents, can still go to the store.
+                claimShareButton
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
@@ -262,19 +321,36 @@ struct PurchaseDetailView: View {
     }
 
     /// Sends the receipt, the other documents and the details to the store.
+    /// Without any picture it still sends the details as text.
+    @ViewBuilder
     private var claimShareButton: some View {
+        if claimImages.isEmpty {
+            ShareLink(item: claimMessage, subject: Text(L("Reklamace – ", "Claim – ") + purchase.productName)) {
+                claimLabel(L("Poslat údaje k reklamaci", "Send details for a claim"))
+            }
+            .buttonStyle(.glassProminent)
+            .controlSize(.large)
+        } else {
+            imageShareLink
+        }
+    }
+
+    private func claimLabel(_ title: String) -> some View {
+        Label(title, systemImage: "square.and.arrow.up")
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
+    }
+
+    private var imageShareLink: some View {
         ShareLink(
             items: claimImages,
             subject: Text(L("Reklamace – ", "Claim – ") + purchase.productName),
             message: Text(claimMessage),
             preview: { image in SharePreview(L("Reklamace – ", "Claim – ") + purchase.productName, image: image) }
         ) {
-            Label(receiptImage == nil ? L("Poslat doklady k reklamaci", "Send documents for a claim")
-                                      : L("Poslat účtenku k reklamaci", "Send receipt for a claim"),
-                  systemImage: "square.and.arrow.up")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
+            claimLabel(receiptImage == nil ? L("Poslat doklady k reklamaci", "Send documents for a claim")
+                                           : L("Poslat účtenku k reklamaci", "Send receipt for a claim"))
         }
         .buttonStyle(.glassProminent)
         .controlSize(.large)
@@ -341,7 +417,7 @@ struct PurchaseDetailView: View {
             return L("Končí \(end). Zkontroluj, jestli všechno funguje, dokud je čas.",
                      "It ends on \(end). Check everything still works while there's time.")
         }
-        guard AppSettings.remindersOn else { return L("Do \(end).", "Until \(end).") }
+        guard AppSettings.remindersOn, !notificationsDenied else { return L("Do \(end).", "Until \(end).") }
         return L("Do \(end). Připomeneme se \(AppFormat.days(NotificationService.daysBefore)) předem.",
                  "Until \(end). We'll remind you \(AppFormat.days(NotificationService.daysBefore)) before.")
     }
@@ -368,6 +444,11 @@ struct PurchaseDetailView: View {
     }
 
     // MARK: Actions
+
+    private func setReceipt(_ image: UIImage) {
+        purchase.receiptImageData = image.storageJPEG()
+        try? modelContext.save()
+    }
 
     private func move(to folder: Folder?) {
         purchase.folder = folder

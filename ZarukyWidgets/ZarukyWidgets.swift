@@ -140,45 +140,63 @@ struct EndingSoonView: View {
         .widgetURL(WidgetSnapshot.url(for: item.id))
     }
 
-    // Medium: value under warranty and the next three.
+    // Medium: value under warranty on the left, the next three to end as full-height rows on the right.
     private var medium: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.title3)
+                Label(L("Brzy končí", "Ending soon"), systemImage: "checkmark.seal.fill")
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(brand)
+                    .labelStyle(.titleAndIcon)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
                 Text(L("Pod zárukou", "Under warranty"))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Text(AppFormat.price(entry.snapshot?.value ?? 0, currency: entry.snapshot?.currency ?? "CZK"))
-                    .font(.system(.headline, design: .rounded).weight(.bold))
-                    .minimumScaleFactor(0.6)
+                    .font(.system(.title3, design: .rounded).weight(.bold))
+                    .minimumScaleFactor(0.5)
                     .lineLimit(1)
+                Text(L("\(entry.snapshot?.activeCount ?? items.count) platných", "\(entry.snapshot?.activeCount ?? items.count) active"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
-            .frame(width: 96, alignment: .leading)
+            .frame(width: 104, alignment: .leading)
+            .frame(maxHeight: .infinity, alignment: .topLeading)
 
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(items.prefix(3)) { item in
+            VStack(alignment: .leading, spacing: 0) {
+                let shown = Array(items.prefix(3))
+                ForEach(Array(shown.enumerated()), id: \.element.id) { index, item in
+                    if index > 0 { Divider() }
                     Link(destination: WidgetSnapshot.url(for: item.id)) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 10) {
                             Image(systemName: item.symbol)
-                                .font(.footnote)
+                                .font(.subheadline)
                                 .foregroundStyle(color(item))
-                                .frame(width: 18)
-                            Text(item.name)
-                                .font(.footnote.weight(.medium))
-                                .lineLimit(1)
+                                .frame(width: 22)
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(item.name)
+                                    .font(.subheadline.weight(.semibold))
+                                    .lineLimit(1)
+                                if !item.store.isEmpty {
+                                    Text(item.store)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
                             Spacer(minLength: 4)
                             Text(AppFormat.remaining(days: days(item)))
-                                .font(.footnote.weight(.semibold))
+                                .font(.caption.weight(.bold))
                                 .foregroundStyle(color(item))
                                 .lineLimit(1)
                         }
+                        .frame(maxHeight: .infinity)
                     }
                 }
-                Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 

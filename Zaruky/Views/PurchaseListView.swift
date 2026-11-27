@@ -185,11 +185,11 @@ struct PurchaseListView: View {
             Text(L("Účtenky ve složce zůstanou, jen budou bez složky.",
                    "Receipts in the folder are kept, they just won't be in a folder."))
         }
-        .confirmationDialog(
+        .alert(
             L("Smazat účtenku?", "Delete receipt?"),
-            isPresented: Binding(get: { purchaseToDelete != nil }, set: { if !$0 { purchaseToDelete = nil } }),
-            titleVisibility: .visible
+            isPresented: Binding(get: { purchaseToDelete != nil }, set: { if !$0 { purchaseToDelete = nil } })
         ) {
+            Button(L("Zrušit", "Cancel"), role: .cancel) { purchaseToDelete = nil }
             Button(L("Smazat", "Delete"), role: .destructive) { deletePurchase() }
         } message: {
             Text(L("Účtenka i připomínka zmizí ze všech tvých zařízení.",
@@ -225,7 +225,12 @@ struct PurchaseListView: View {
 
                 if filter == .all && !isSearching && !purchases.isEmpty {
                     SummaryCard(purchases: purchases)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, store.isUnlocked ? 8 : 0)
+                    // Up top, so it isn't hidden under the bottom bar when the list is short.
+                    if !store.isUnlocked {
+                        FreeLimitCard(used: purchases.count) { showPaywall = true }
+                            .padding(.bottom, 8)
+                    }
                 }
 
                 ForEach(WarrantyStatus.allCases) { status in
@@ -247,11 +252,6 @@ struct PurchaseListView: View {
                 if filtered.isEmpty {
                     emptyFilterState
                         .padding(.top, 40)
-                }
-
-                if !store.isUnlocked && !purchases.isEmpty {
-                    FreeLimitCard(used: purchases.count) { showPaywall = true }
-                        .padding(.top, 12)
                 }
 
                 SyncStatusFooter()
@@ -280,8 +280,12 @@ struct PurchaseListView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             if status == .expired && !isSearching {
-                Button(showExpired ? L("Skrýt", "Hide") : L("Zobrazit", "Show")) {
+                Button {
                     showExpired.toggle()
+                } label: {
+                    Text(showExpired ? L("Skrýt", "Hide") : L("Zobrazit", "Show"))
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(.rect)
                 }
                 .font(.subheadline)
             }
@@ -562,9 +566,10 @@ struct SummaryCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(L("Pod zárukou máš", "Under warranty"))
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .foregroundStyle(.white)
                 Text(AppFormat.price(protectedValue, currency: currency))
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .font(.largeTitle.bold())
+                    .fontDesign(.rounded)
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
                     .minimumScaleFactor(0.6)
@@ -581,8 +586,8 @@ struct SummaryCard: View {
         .padding(18)
         .background {
             RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .fill(LinearGradient(colors: [Color(red: 0.13, green: 0.70, blue: 0.50),
-                                              Color(red: 0.03, green: 0.42, blue: 0.31)],
+                .fill(LinearGradient(colors: [Color(red: 0.06, green: 0.50, blue: 0.37),
+                                              Color(red: 0.02, green: 0.35, blue: 0.26)],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(alignment: .topTrailing) {
                     Image(systemName: "checkmark.seal.fill")
@@ -602,13 +607,15 @@ struct SummaryCard: View {
             Image(systemName: symbol)
                 .foregroundStyle(highlight ? Theme.amber : .white)
             Text("\(value)").fontWeight(.bold)
-            Text(label).foregroundStyle(.white.opacity(0.9))
+            Text(label)
         }
         .font(.subheadline)
         .foregroundStyle(.white)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
         .background(.white.opacity(highlight ? 0.22 : 0.15), in: Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value) \(label)")
     }
 }
 
@@ -789,7 +796,7 @@ struct FolderBar: View {
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 1)
-                    .background(isSelected ? Color.white.opacity(0.25) : Color(.tertiarySystemFill), in: Capsule())
+                    .background(isSelected ? Color.black.opacity(0.22) : Color(.tertiarySystemFill), in: Capsule())
             }
             .font(.subheadline.weight(.semibold))
             .padding(.leading, 12)
@@ -801,7 +808,10 @@ struct FolderBar: View {
             .shadow(color: .black.opacity(isSelected ? 0.12 : 0.04), radius: 4, y: 1)
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(AppFormat.receipts(count))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 

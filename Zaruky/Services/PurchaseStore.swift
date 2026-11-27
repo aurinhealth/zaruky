@@ -13,6 +13,9 @@ final class PurchaseStore {
     var isUnlocked = false
     var isPurchasing = false
     var errorMessage: String?
+    /// The offer couldn't be loaded from the App Store (offline, or the product isn't available yet).
+    var loadFailed = false
+    var isLoading = false
 
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
@@ -36,11 +39,17 @@ final class PurchaseStore {
     }
 
     func loadProduct() async {
+        guard !isLoading else { return }
+        isLoading = true
+        loadFailed = false
+        defer { isLoading = false }
         do {
             product = try await Product.products(for: [Self.productID]).first
         } catch {
-            errorMessage = L("Nepodařilo se načíst nabídku.", "Couldn't load the offer.")
+            product = nil
         }
+        // An empty answer isn't an error in StoreKit, so treat both the same.
+        loadFailed = product == nil
     }
 
     func refreshEntitlements() async {

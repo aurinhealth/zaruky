@@ -73,24 +73,40 @@ struct PurchaseFormView: View {
                 }
 
                 Section(L("Nákup", "Purchase")) {
-                    TextField(L("Co jsi koupil? (např. iPhone 16)", "What did you buy? (e.g. iPhone 16)"), text: $productName)
-                        .font(.headline)
-                    TextField(L("Obchod", "Store"), text: $storeName)
+                    // Labels stay visible once a field is filled, so a filled form still says what's what.
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("Produkt", "Product"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField(L("Co jsi koupil? (např. iPhone 16)", "What did you buy? (e.g. iPhone 16)"), text: $productName)
+                            .font(.headline)
+                    }
+                    LabeledContent(L("Obchod", "Store")) {
+                        TextField(L("Obchod", "Store"), text: $storeName, prompt: Text(L("např. Alza.cz", "e.g. Amazon")))
+                            .multilineTextAlignment(.trailing)
+                    }
                     DatePicker(L("Datum nákupu", "Purchase date"), selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
-                    HStack {
-                        TextField(L("Cena", "Price"), text: $priceText)
-                            .keyboardType(.decimalPad)
-                        Text(AppSettings.symbol(for: currencyCode)).foregroundStyle(.secondary)
+                    LabeledContent(L("Cena", "Price")) {
+                        HStack(spacing: 6) {
+                            TextField(L("Cena", "Price"), text: $priceText, prompt: Text("0"))
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text(AppSettings.symbol(for: currencyCode)).foregroundStyle(.secondary)
+                        }
                     }
                     NavigationLink {
                         CurrencyPicker(selection: $currencyCode)
                     } label: {
                         LabeledContent(L("Měna", "Currency"), value: AppSettings.name(for: currencyCode))
                     }
-                    TextField(L("Sériové číslo / IMEI", "Serial number / IMEI"), text: $serialNumber)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .font(.body.monospaced())
+                    LabeledContent(L("Sériové číslo", "Serial number")) {
+                        TextField(L("Sériové číslo / IMEI", "Serial number / IMEI"), text: $serialNumber,
+                                  prompt: Text(L("nebo IMEI", "or IMEI")))
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                            .font(.body.monospaced())
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
 
                 Section {
@@ -98,6 +114,11 @@ struct PurchaseFormView: View {
                         ForEach(pickerOptions, id: \.self) { months in
                             Text(AppFormat.warrantyLength(months: months)).tag(months)
                         }
+                    }
+                    // Any other length, a month at a time.
+                    Stepper(value: $warrantyMonths, in: 1...120) {
+                        Text(L("Upravit po měsících", "Adjust by month"))
+                            .foregroundStyle(.secondary)
                     }
                     LabeledContent {
                         Text(AppFormat.date(endDate))
@@ -175,7 +196,7 @@ struct PurchaseFormView: View {
         productName = purchase.productName
         storeName = purchase.storeName
         purchaseDate = purchase.purchaseDate
-        priceText = purchase.price.map { String(format: "%.2f", $0).replacingOccurrences(of: ".", with: ",") } ?? ""
+        priceText = purchase.price.map(Self.priceText) ?? ""
         warrantyMonths = purchase.warrantyMonths
         currencyCode = purchase.currencyCode
         notes = purchase.notes
@@ -201,7 +222,7 @@ struct PurchaseFormView: View {
         if let date = draft.purchaseDate { purchaseDate = date }
         if serialNumber.isEmpty, let serial = draft.serialNumber { serialNumber = serial }
         if priceText.isEmpty, let price = draft.price {
-            priceText = String(format: "%.2f", price).replacingOccurrences(of: ".", with: ",")
+            priceText = Self.priceText(price)
         }
         if let months = draft.warrantyMonths { warrantyMonths = months }
         var suggestedFolder: String?
@@ -224,6 +245,12 @@ struct PurchaseFormView: View {
             readNote = (readNote ?? "") + " " + L("Složku „\(suggestedFolder)“ jsem navrhl podle produktu.",
                                                   "Suggested the “\(suggestedFolder)” folder from the product.")
         }
+    }
+
+    /// "1290" for whole amounts, "1290,50" otherwise.
+    private static func priceText(_ value: Double) -> String {
+        let text = value.rounded() == value ? String(format: "%.0f", value) : String(format: "%.2f", value)
+        return text.replacingOccurrences(of: ".", with: ",")
     }
 
     private var parsedPrice: Double? {

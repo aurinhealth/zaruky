@@ -76,6 +76,9 @@ enum AppInfo {
     static let appStoreURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)")!
     static let reviewURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")!
 
+    /// Apple's standard licence agreement, which covers the one-time purchase.
+    static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+
     /// Address for "Napsat nám" (contact). Left empty, the row is hidden.
     static let supportEmail = "petr.bouma@aurin.health"
 

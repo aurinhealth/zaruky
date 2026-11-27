@@ -10,10 +10,7 @@ struct AttachmentsCard: View {
     let purchase: Purchase
 
     @State private var pendingKind: AttachmentKind = .warrantyCard
-    @State private var showScanner = false
-    @State private var showPhotoPicker = false
-    @State private var showFileImporter = false
-    @State private var photoItem: PhotosPickerItem?
+    @State private var source: ImageSource?
     @State private var viewing: Attachment?
     @State private var toDelete: Attachment?
 
@@ -48,34 +45,15 @@ struct AttachmentsCard: View {
         }
         .padding(14)
         .card()
-        .fullScreenCover(isPresented: $showScanner) {
-            DocumentScannerView { image in
-                showScanner = false
-                if let image { add(image) }
-            }
-            .ignoresSafeArea()
-        }
-        .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
-        .onChange(of: photoItem) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-                    add(image)
-                }
-                photoItem = nil
-            }
-        }
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: FileImport.contentTypes) { result in
-            if case .success(let url) = result, let file = FileImport.load(url) { add(file.image) }
-        }
+        .imageSourcePicker($source) { add($0) }
         .fullScreenCover(item: $viewing) { attachment in
             if let image = attachment.imageData.flatMap(UIImage.init(data:)) {
                 ReceiptImageViewer(image: image)
             }
         }
-        .confirmationDialog(L("Smazat doklad?", "Delete this document?"),
-                            isPresented: Binding(get: { toDelete != nil }, set: { if !$0 { toDelete = nil } }),
-                            titleVisibility: .visible) {
+        .alert(L("Smazat doklad?", "Delete this document?"),
+               isPresented: Binding(get: { toDelete != nil }, set: { if !$0 { toDelete = nil } })) {
+            Button(L("Zrušit", "Cancel"), role: .cancel) { toDelete = nil }
             Button(L("Smazat", "Delete"), role: .destructive) { deletePending() }
         }
     }
@@ -84,9 +62,7 @@ struct AttachmentsCard: View {
         Menu {
             ForEach(AttachmentKind.allCases) { kind in
                 Menu {
-                    Button { start(kind, .scan) } label: { Label(L("Vyfotit", "Take a photo"), systemImage: "camera") }
-                    Button { start(kind, .photos) } label: { Label(L("Z Fotek", "From Photos"), systemImage: "photo") }
-                    Button { start(kind, .files) } label: { Label(L("Ze Souborů", "From Files"), systemImage: "folder") }
+                    ImageSourceButtons { pendingKind = kind; source = $0 }
                 } label: {
                     Label(kind.title, systemImage: kind.symbol)
                 }
@@ -94,7 +70,10 @@ struct AttachmentsCard: View {
         } label: {
             Label(L("Přidat", "Add"), systemImage: "plus")
                 .font(.subheadline.weight(.semibold))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(.rect)
         }
+        .accessibilityLabel(L("Přidat doklad", "Add a document"))
     }
 
     private func thumbnail(_ attachment: Attachment) -> some View {
@@ -144,18 +123,6 @@ struct AttachmentsCard: View {
         }
     }
 
-    private enum Source { case scan, photos, files }
-
-    private func start(_ kind: AttachmentKind, _ source: Source) {
-        pendingKind = kind
-        switch source {
-        case .scan:
-            if VNDocumentCameraViewController.isSupported { showScanner = true } else { showPhotoPicker = true }
-        case .photos: showPhotoPicker = true
-        case .files: showFileImporter = true
-        }
-    }
-
     private func add(_ image: UIImage) {
         let attachment = Attachment(kind: pendingKind, imageData: image.storageJPEG())
         modelContext.insert(attachment)
@@ -168,6 +135,71 @@ struct AttachmentsCard: View {
         toDelete = nil
         modelContext.delete(attachment)
         try? modelContext.save()
+    }
+}
+
+// MARK: - Picking a picture
+
+/// Where a picture comes from: the document scanner, Photos or Files.
+enum ImageSource: Identifiable {
+    case scan, photos, files
+    var id: Self { self }
+}
+
+/// The three menu buttons for picking a picture.
+struct ImageSourceButtons: View {
+    var pick: (ImageSource) -> Void
+
+    var body: some View {
+        Button { pick(.scan) } label: { Label(L("Vyfotit", "Take a photo"), systemImage: "camera") }
+        Button { pick(.photos) } label: { Label(L("Z Fotek", "From Photos"), systemImage: "photo") }
+        Button { pick(.files) } label: { Label(L("Ze Souborů", "From Files"), systemImage: "folder") }
+    }
+}
+
+/// Presents the scanner, the photo picker or the file importer for the chosen source,
+/// and hands back the picture.
+struct ImageSourcePicker: ViewModifier {
+    @Binding var source: ImageSource?
+    var onImage: (UIImage) -> Void
+    @State private var photoItem: PhotosPickerItem?
+
+    private func flag(_ kind: ImageSource) -> Binding<Bool> {
+        Binding(get: { source == kind }, set: { if !$0, source == kind { source = nil } })
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .fullScreenCover(isPresented: flag(.scan)) {
+                DocumentScannerView { image in
+                    source = nil
+                    if let image { onImage(image) }
+                }
+                .ignoresSafeArea()
+            }
+            .photosPicker(isPresented: flag(.photos), selection: $photoItem, matching: .images)
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                        onImage(image)
+                    }
+                    photoItem = nil
+                }
+            }
+            .fileImporter(isPresented: flag(.files), allowedContentTypes: FileImport.contentTypes) { result in
+                if case .success(let url) = result, let file = FileImport.load(url) { onImage(file.image) }
+            }
+            .onChange(of: source) { _, new in
+                // No camera (simulator, some iPads): fall back to Photos.
+                if new == .scan, !VNDocumentCameraViewController.isSupported { source = .photos }
+            }
+    }
+}
+
+extension View {
+    func imageSourcePicker(_ source: Binding<ImageSource?>, onImage: @escaping (UIImage) -> Void) -> some View {
+        modifier(ImageSourcePicker(source: source, onImage: onImage))
     }
 }
 
