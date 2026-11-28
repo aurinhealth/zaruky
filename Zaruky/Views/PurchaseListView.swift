@@ -13,6 +13,9 @@ struct FormContext: Identifiable {
 
 struct PurchaseListView: View {
     @Environment(PurchaseStore.self) private var store
+
+    /// Store screenshots leave out the free-limit card; the paywall screenshot shows the offer.
+    private var showsFreeLimit: Bool { !store.isUnlocked && !DemoMode.isOn }
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \Purchase.purchaseDate, order: .reverse) private var purchases: [Purchase]
@@ -814,9 +817,6 @@ struct FolderBar: View {
 
 /// Tells the user whether receipts are backed up to iCloud.
 struct SyncStatusFooter: View {
-    /// Store screenshots leave out the free-limit card; the paywall screenshot shows the offer.
-    private var showsFreeLimit: Bool { !store.isUnlocked && !DemoMode.isOn }
-
     private var iCloudAvailable: Bool { FileManager.default.ubiquityIdentityToken != nil || DemoMode.isOn }
 
     var body: some View {
