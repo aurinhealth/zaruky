@@ -93,6 +93,14 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             .accessibilityElement(children: .combine)
+            // Hidden test switch for TestFlight/App Review: hold the tile for 3 s to show the
+            // free version again (and back). Does nothing in the App Store.
+            .contentShape(.rect)
+            .onLongPressGesture(minimumDuration: 3) {
+                guard store.isSandbox else { return }
+                store.simulateFree.toggle()
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
 
             if !store.isUnlocked {
                 Button { showPaywall = true } label: {

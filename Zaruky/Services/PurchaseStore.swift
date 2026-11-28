@@ -16,6 +16,19 @@ final class PurchaseStore {
     /// The offer couldn't be loaded from the App Store (offline, or the product isn't available yet).
     var loadFailed = false
     var isLoading = false
+    /// True in TestFlight and App Review (StoreKit sandbox), false in the App Store.
+    var isSandbox = false
+    /// Sandbox only: act as the free version although the purchase is owned, so the
+    /// paywall and purchase flow can be shown again (a sandbox purchase can't be undone).
+    var simulateFree = UserDefaults.standard.bool(forKey: PurchaseStore.simulateFreeKey) {
+        didSet {
+            UserDefaults.standard.set(simulateFree, forKey: Self.simulateFreeKey)
+            isUnlocked = isEntitled && !simulateFree
+        }
+    }
+
+    @ObservationIgnored private var isEntitled = false
+    private static let simulateFreeKey = "debug.simulateFree"
 
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
@@ -29,6 +42,7 @@ final class PurchaseStore {
             }
         }
         Task { [weak self] in
+            await self?.loadEnvironment()
             await self?.loadProduct()
             await self?.refreshEntitlements()
         }
@@ -36,6 +50,14 @@ final class PurchaseStore {
 
     func canAdd(currentCount: Int) -> Bool {
         isUnlocked || currentCount < Self.freeLimit
+    }
+
+    private func loadEnvironment() async {
+        if case .verified(let transaction)? = try? await AppTransaction.shared {
+            isSandbox = transaction.environment != .production
+        }
+        // Never let the test switch affect App Store customers.
+        if !isSandbox && simulateFree { simulateFree = false }
     }
 
     func loadProduct() async {
@@ -61,7 +83,8 @@ final class PurchaseStore {
                 unlocked = true
             }
         }
-        isUnlocked = unlocked
+        isEntitled = unlocked
+        isUnlocked = unlocked && !(isSandbox && simulateFree)
     }
 
     func buy() async {
@@ -74,6 +97,8 @@ final class PurchaseStore {
             case .success(let verification):
                 if case .verified(let transaction) = verification {
                     await transaction.finish()
+                    isEntitled = true
+                    simulateFree = false
                     isUnlocked = true
                 }
             case .pending, .userCancelled:
@@ -87,6 +112,7 @@ final class PurchaseStore {
     }
 
     func restore() async {
+        simulateFree = false
         do {
             try await AppStore.sync()
         } catch {
