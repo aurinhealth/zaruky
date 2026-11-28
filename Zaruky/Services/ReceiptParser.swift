@@ -7,6 +7,9 @@ struct ReceiptDraft {
     var productName: String = ""
     var purchaseDate: Date?
     var price: Double?
+    /// ISO code of the currency printed on the receipt (Kč → CZK, € → EUR). nil when it doesn't say;
+    /// the form then uses the default from Settings.
+    var currencyCode: String?
     /// nil when the receipt doesn't say; the form then uses the default from Settings.
     var warrantyMonths: Int?
     /// The receipt shows a warranty bought on top of the legal one (e.g. Alza's "Prodloužená záruka +3 roky").
@@ -30,6 +33,9 @@ struct ReceiptExtraction {
     @Guide(description: "Celková zaplacená cena jako číslo bez měny, 0 pokud není známa")
     var totalPrice: Double
 
+    @Guide(description: "Třípísmenný kód ISO 4217 měny, ve které je cena na účtence (Kč = CZK, € = EUR, $ = USD, zł = PLN, £ = GBP). Prázdný text, pokud měna na účtence není.")
+    var currencyCode: String
+
     @Guide(description: "Celková délka záruky v měsících, včetně prodloužené záruky koupené navíc (např. zákonných 24 měsíců + prodloužená záruka o 3 roky = 60). Pokud není na účtence uvedena, 24.")
     var warrantyMonths: Int
 
@@ -49,6 +55,8 @@ enum ReceiptParser {
                 draft.productName = ai.productName
                 draft.purchaseDate = isoDate(ai.purchaseDate) ?? fallback.purchaseDate
                 draft.price = ai.totalPrice > 0 ? ai.totalPrice : fallback.price
+                // The rules count the currency marks actually printed, so they win over the model.
+                draft.currencyCode = fallback.currencyCode ?? validCurrency(ai.currencyCode)
                 draft.serialNumber = fallback.serialNumber
                 draft.warrantyMonths = fallback.warrantyMonths
                 draft.extendedWarranty = fallback.extendedWarranty
@@ -89,6 +97,7 @@ enum ReceiptParser {
         draft.storeName = lines.first ?? ""
         draft.purchaseDate = firstDate(in: text)
         draft.price = totalPrice(in: lines)
+        draft.currencyCode = currency(in: text)
         draft.serialNumber = serialNumber(in: text)
         if let warranty = warranty(in: text) {
             draft.warrantyMonths = warranty.months
@@ -156,6 +165,47 @@ enum ReceiptParser {
             }
         }
         return nil
+    }
+
+    /// Currency marks per ISO code. Codes are matched as whole words; symbols anywhere.
+    private static let currencyMarks: [(code: String, patterns: [String])] = [
+        ("CZK", [#"\bCZK\b"#, #"\bK[čc]\b"#]),
+        ("EUR", [#"\bEUR\b"#, "€", #"\b(?:euro|eura|eur|eiro)\b"#]),
+        ("USD", [#"\bUSD\b"#, #"\$"#]),
+        ("GBP", [#"\bGBP\b"#, "£"]),
+        ("PLN", [#"\bPLN\b"#, #"\bzł\b"#]),
+        ("CHF", [#"\bCHF\b"#]),
+        ("HUF", [#"\bHUF\b"#, #"\bFt\b"#]),
+        ("SEK", [#"\bSEK\b"#]), ("NOK", [#"\bNOK\b"#]), ("DKK", [#"\bDKK\b"#]),
+        ("RON", [#"\bRON\b"#, #"\blei\b"#]), ("BGN", [#"\bBGN\b"#, #"\bлв\b"#]),
+        ("CAD", [#"\bCAD\b"#]), ("AUD", [#"\bAUD\b"#]), ("JPY", [#"\bJPY\b"#, "¥"]),
+    ]
+
+    /// The currency the receipt is in: the one whose marks appear most often (ties → nil).
+    static func currency(in text: String) -> String? {
+        let ns = text as NSString
+        let range = NSRange(location: 0, length: ns.length)
+        var counts: [(String, Int)] = []
+        for (code, patterns) in currencyMarks {
+            var count = 0
+            for pattern in patterns {
+                // Codes are upper case on receipts; words like "euro" or "Kč" can be any case.
+                let options: NSRegularExpression.Options = pattern.contains(code) ? [] : [.caseInsensitive]
+                if let regex = try? NSRegularExpression(pattern: pattern, options: options) {
+                    count += regex.numberOfMatches(in: text, range: range)
+                }
+            }
+            if count > 0 { counts.append((code, count)) }
+        }
+        let sorted = counts.sorted { $0.1 > $1.1 }
+        guard let best = sorted.first else { return nil }
+        if sorted.count > 1, sorted[1].1 == best.1 { return nil }
+        return best.0
+    }
+
+    private static func validCurrency(_ code: String) -> String? {
+        let upper = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return Locale.commonISOCurrencyCodes.contains(upper) ? upper : nil
     }
 
     private static func lastNumber(in line: String) -> Double? {

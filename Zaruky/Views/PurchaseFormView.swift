@@ -232,6 +232,7 @@ struct PurchaseFormView: View {
         if priceText.isEmpty, let price = draft.price {
             priceText = Self.priceText(price)
         }
+        if let code = draft.currencyCode { currencyCode = code }
         if let months = draft.warrantyMonths { warrantyMonths = months }
         var suggestedFolder: String?
         if folder == nil, !folders.isEmpty {
