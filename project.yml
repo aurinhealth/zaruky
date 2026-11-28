@@ -4,7 +4,7 @@ options:
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
-  developmentLanguage: cs
+  developmentLanguage: en
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -22,14 +22,14 @@ targets:
     info:
       path: Zaruky/Info.plist
       properties:
-        CFBundleDisplayName: Hlídač záruk
-        CFBundleDevelopmentRegion: cs
-        CFBundleLocalizations: [cs, en, de]
+        CFBundleDisplayName: Warranty Guard
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [cs, en, de, sk, pl, fr, es, it, pt-BR, pt-PT, nl]
         UIBackgroundModes: [remote-notification]
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        NSCameraUsageDescription: Fotoaparát slouží ke skenování účtenek.
-        NSPhotoLibraryUsageDescription: Přístup k Fotkám slouží k výběru fotky účtenky.
+        NSCameraUsageDescription: The camera is used to scan receipts.
+        NSPhotoLibraryUsageDescription: Photos access lets you pick a photo of a receipt.
         ITSAppUsesNonExemptEncryption: false
         # Lets Files, Mail and Safari offer "Open in Záruky" for PDFs and pictures.
         CFBundleDocumentTypes:
@@ -65,6 +65,7 @@ targets:
       - path: ZarukyWidgets
       - path: Zaruky/Shared
       - path: Zaruky/Models/L10n.swift
+      - path: Zaruky/Models/Translations
       - path: Zaruky/Models/AppFormat.swift
     entitlements:
       path: ZarukyWidgets/ZarukyWidgets.entitlements
@@ -73,9 +74,9 @@ targets:
     info:
       path: ZarukyWidgets/Info.plist
       properties:
-        CFBundleDisplayName: Hlídač záruk
-        CFBundleDevelopmentRegion: cs
-        CFBundleLocalizations: [cs, en, de]
+        CFBundleDisplayName: Warranty Guard
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [cs, en, de, sk, pl, fr, es, it, pt-BR, pt-PT, nl]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:

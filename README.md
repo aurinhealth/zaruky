@@ -2,6 +2,14 @@
 
 iOS 26 appka na účtenky a záruky. Naskenuješ účtenku, appka v telefonu přečte text (Vision), vytáhne údaje (Apple Foundation Models, na starších telefonech jednoduchá pravidla), uloží je (SwiftData) a 30 dní před koncem záruky pošle upozornění. Prvních 5 účtenek zdarma, pak jednorázové odemčení přes StoreKit 2.
 
+## Jazyky
+
+Appka mluví česky, anglicky, německy, slovensky, polsky, francouzsky, španělsky, italsky, portugalsky a nizozemsky. Jazyk se řídí telefonem (i jazykem appky v Nastavení iOS), jinak angličtina.
+
+- Čeština, angličtina a němčina se píšou přímo v kódu: `L("česky", "English", "Deutsch")`.
+- Ostatní jazyky jsou v `Zaruky/Models/Translations/`, klíčem je anglický text, kde se hodnoty z `\(…)` píšou jako `%1`, `%2`… Nový nebo změněný anglický text je potřeba doplnit i tam, jinak se v těch jazycích ukáže anglicky.
+- Tvary slov (1 den, 2 dny, 5 dní…) jsou v `AppFormat.word`.
+
 ## Build bez Macu
 
 Každý push na `main` spustí workflow `.github/workflows/build.yml` na macOS runneru GitHubu: XcodeGen vygeneruje projekt a `xcodebuild` ho sestaví pro simulátor bez podepisování.

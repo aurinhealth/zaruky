@@ -13,6 +13,9 @@ struct FormContext: Identifiable {
 
 struct PurchaseListView: View {
     @Environment(PurchaseStore.self) private var store
+
+    /// Store screenshots leave out the free-limit card; the paywall screenshot shows the offer.
+    private var showsFreeLimit: Bool { !store.isUnlocked && !DemoMode.isOn }
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \Purchase.purchaseDate, order: .reverse) private var purchases: [Purchase]
@@ -222,9 +225,9 @@ struct PurchaseListView: View {
 
                 if filter == .all && !isSearching && !purchases.isEmpty {
                     SummaryCard(purchases: purchases)
-                        .padding(.bottom, store.isUnlocked ? 8 : 0)
+                        .padding(.bottom, showsFreeLimit ? 0 : 8)
                     // Up top, so it isn't hidden under the bottom bar when the list is short.
-                    if !store.isUnlocked {
+                    if showsFreeLimit {
                         FreeLimitCard(used: purchases.count) { showPaywall = true }
                             .padding(.bottom, 8)
                     }
@@ -477,6 +480,7 @@ struct PurchaseListView: View {
         case "settings": showSettings = true
         case "viewer": showDemoViewer = true
         case "form": formContext = FormContext(image: nil)
+        case "scan": formContext = FormContext(image: DemoMode.sampleReceipt)
         case "folder": filter = folders.first.map { .folder($0.id) } ?? .all
         default: break
         }

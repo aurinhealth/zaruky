@@ -43,15 +43,15 @@ enum FolderSuggester {
     private static let categories: [(symbols: [String], folderWords: [String])] = [
         (["iphone", "laptopcomputer", "desktopcomputer", "ipad", "applewatch", "headphones", "tv",
           "hifispeaker.fill", "camera.fill", "gamecontroller.fill", "printer.fill", "wifi.router.fill"],
-         ["elektro", "electronic", "technik", "tech", "počítač", "pocitac", "mobil", "gadget", "computer", "handy"]),
+         ["elektro", "electronic", "technik", "tech", "počítač", "pocitac", "mobil", "gadget", "computer", "handy", "électr", "electr", "elettr", "eletr", "informati", "telefon"]),
         (["washer.fill", "dishwasher.fill", "refrigerator.fill", "oven.fill", "cup.and.saucer.fill", "fanblades.fill"],
-         ["domác", "domac", "home", "household", "spotřebič", "spotrebic", "kuchyň", "kuchyn", "appliance", "byt", "dům", "dum", "haushalt", "küche", "kuche", "wohnung", "haus"]),
-        (["sofa.fill", "lightbulb.fill"], ["nábytek", "nabytek", "furniture", "domác", "domac", "home", "byt", "dům", "dum", "möbel", "mobel", "haushalt", "wohnung"]),
-        (["car.fill"], ["auto", "car", "vůz", "vuz", "fahrzeug", "wagen"]),
-        (["bicycle"], ["kolo", "sport", "bike", "outdoor", "fahrrad"]),
-        (["tshirt.fill"], ["oblečení", "obleceni", "móda", "moda", "clothes", "fashion", "boty", "kleidung", "mode", "schuhe"]),
-        (["hammer.fill"], ["nářadí", "naradi", "dílna", "dilna", "tools", "zahrad", "garden", "garáž", "garaz", "werkzeug", "werkstatt", "garten", "garage"]),
-        (["stroller.fill"], ["dět", "det", "kids", "baby", "miminko", "kinder", "kind"]),
+         ["domác", "domac", "home", "household", "spotřebič", "spotrebic", "kuchyň", "kuchyn", "appliance", "byt", "dům", "dum", "haushalt", "küche", "kuche", "wohnung", "haus", "maison", "casa", "hogar", "huis", "cuisine", "cocina", "cucina", "cozinha", "keuken", "ménager", "electrodom", "elettrodom", "eletrodom", "agd", "dom"]),
+        (["sofa.fill", "lightbulb.fill"], ["nábytek", "nabytek", "furniture", "domác", "domac", "home", "byt", "dům", "dum", "möbel", "mobel", "haushalt", "wohnung", "meuble", "mueble", "mobili", "móvei", "movei", "meubel", "meble", "nábytok", "maison", "casa", "hogar", "huis", "dom"]),
+        (["car.fill"], ["auto", "car", "vůz", "vuz", "fahrzeug", "wagen", "voiture", "coche", "carro", "samochód", "samochod"]),
+        (["bicycle"], ["kolo", "sport", "bike", "outdoor", "fahrrad", "vélo", "velo", "bici", "fiets", "rower", "bicyk"]),
+        (["tshirt.fill"], ["oblečení", "obleceni", "móda", "moda", "clothes", "fashion", "boty", "kleidung", "mode", "schuhe", "vêtement", "vetement", "ropa", "abbigliamento", "roupa", "kleding", "ubrani", "odzież", "odziez", "oblečen", "oblecen"]),
+        (["hammer.fill"], ["nářadí", "naradi", "dílna", "dilna", "tools", "zahrad", "garden", "garáž", "garaz", "werkzeug", "werkstatt", "garten", "garage", "outil", "herramienta", "attrezz", "ferrament", "gereedschap", "narzędzi", "narzedzi", "náradi", "jardin", "jardín", "giardino", "jardim", "tuin", "ogród", "ogrod"]),
+        (["stroller.fill"], ["dět", "det", "kids", "baby", "miminko", "kinder", "kind", "enfant", "bébé", "bebe", "niño", "nino", "bambin", "criança", "crianca", "dzieci", "dziec"]),
     ]
 
     static func byKeywords(product: String, folders: [String]) -> String? {

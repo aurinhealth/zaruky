@@ -134,7 +134,7 @@ enum ExportService {
         func number(_ v: Double?) -> String {
             guard let v else { return "" }
             let text = String(format: "%.2f", v)
-            return L10n.isEnglish ? text : text.replacingOccurrences(of: ".", with: ",")
+            return L10n.locale.decimalSeparator == "," ? text.replacingOccurrences(of: ".", with: ",") : text
         }
 
         let header = L("Produkt;Obchod;Složka;Datum nákupu;Záruka (měsíce);Konec záruky;Stav;Cena;Měna;Sériové číslo;Poznámka;Fotka", "Product;Store;Folder;Purchase date;Warranty (months);Warranty ends;Status;Price;Currency;Serial number;Note;Photo", "Produkt;Geschäft;Ordner;Kaufdatum;Garantie (Monate);Garantie endet;Status;Preis;Währung;Seriennummer;Notiz;Foto")

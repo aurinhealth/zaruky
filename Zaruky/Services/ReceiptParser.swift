@@ -104,18 +104,39 @@ enum ReceiptParser {
         return f.date(from: string.trimmingCharacters(in: .whitespaces))
     }
 
+    /// The first sensible date: 20.12.2024, 20/12/24, 20-12-2024 or 2024-12-20.
+    /// Day comes first, except on phones set to the United States.
     private static func firstDate(in text: String) -> Date? {
-        let pattern = #"(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{2,4})"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let monthFirst = Locale.current.region?.identifier == "US"
         let ns = text as NSString
-        for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
-            guard let d = Int(ns.substring(with: match.range(at: 1))),
-                  let m = Int(ns.substring(with: match.range(at: 2))),
-                  var y = Int(ns.substring(with: match.range(at: 3))) else { continue }
-            if y < 100 { y += 2000 }
+        var candidates: [(location: Int, day: Int, month: Int, year: Int)] = []
+
+        let dmy = #"(?<!\d)(\d{1,2})\s?([./-])\s?(\d{1,2})\s?\2\s?(\d{2,4})(?!\d)"#
+        if let regex = try? NSRegularExpression(pattern: dmy) {
+            for m in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                guard let a = Int(ns.substring(with: m.range(at: 1))),
+                      let b = Int(ns.substring(with: m.range(at: 3))),
+                      var y = Int(ns.substring(with: m.range(at: 4))) else { continue }
+                if y < 100 { y += 2000 }
+                // A slash date with a first number over 12 can only be day first.
+                let swap = monthFirst && ns.substring(with: m.range(at: 2)) == "/" && a <= 12
+                candidates.append((m.range.location, swap ? b : a, swap ? a : b, y))
+            }
+        }
+        let iso = #"(?<!\d)(\d{4})-(\d{1,2})-(\d{1,2})(?!\d)"#
+        if let regex = try? NSRegularExpression(pattern: iso) {
+            for m in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                guard let y = Int(ns.substring(with: m.range(at: 1))),
+                      let mo = Int(ns.substring(with: m.range(at: 2))),
+                      let d = Int(ns.substring(with: m.range(at: 3))) else { continue }
+                candidates.append((m.range.location, d, mo, y))
+            }
+        }
+
+        for c in candidates.sorted(by: { $0.location < $1.location }) {
             var comps = DateComponents()
-            comps.day = d; comps.month = m; comps.year = y
-            if (1...31).contains(d), (1...12).contains(m), (2000...2100).contains(y),
+            comps.day = c.day; comps.month = c.month; comps.year = c.year
+            if (1...31).contains(c.day), (1...12).contains(c.month), (2000...2100).contains(c.year),
                let date = Calendar.current.date(from: comps), date <= Date() {
                 return date
             }
@@ -125,7 +146,9 @@ enum ReceiptParser {
 
     private static func totalPrice(in lines: [String]) -> Double? {
         let keywords = ["celkem", "k úhradě", "k uhrade", "total", "suma", "zaplaceno",
-                        "summe", "gesamt", "zu zahlen"]
+                        "summe", "gesamt", "zu zahlen",
+                        "celkom", "na úhradu", "na uhradu", "razem", "do zapłaty", "do zaplaty",
+                        "montant", "à payer", "a payer", "importe", "a pagar", "totale", "totaal", "te betalen"]
         for line in lines {
             let lower = line.lowercased()
             if keywords.contains(where: { lower.contains($0) }), let value = lastNumber(in: line) {
@@ -152,7 +175,7 @@ enum ReceiptParser {
 
     /// "S/N: C02XK1ABJG5J", "Sériové číslo: …", "IMEI 356789012345678".
     static func serialNumber(in text: String) -> String? {
-        let pattern = #"(?<![\p{L}\d])(?:S/N|SN|sériové číslo|seriove cislo|výrobní číslo|vyrobni cislo|serial(?: number| no\.?)?|seriennummer|serien-nr\.?|IMEI)\s*[:#.]?\s*([A-Z0-9][A-Z0-9-]{4,29})\b"#
+        let pattern = #"(?<![\p{L}\d])(?:S/N|SN|N/S|sériové číslo|seriove cislo|výrobní číslo|vyrobni cislo|výrobné číslo|vyrobne cislo|serial(?: number| no\.?)?|seriennummer|serien-nr\.?|serienummer|numer seryjny|num[ée]ro de s[ée]rie|n° de s[ée]rie|n[úu]mero de s[ée]rie|numero di serie|IMEI)\s*[:#.]?\s*([A-Z0-9][A-Z0-9-]{4,29})\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
         let ns = text as NSString
         guard let match = regex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) else { return nil }
@@ -161,13 +184,13 @@ enum ReceiptParser {
         return value.rangeOfCharacter(from: .decimalDigits) == nil ? nil : value.uppercased()
     }
 
-    /// Units after a number: months or years, Czech, English and German.
-    private static let unit = #"(měsíc\w*|mesic\w*|měs\.?|mes\.?|m\.|let|roky|rok\w*|years?|yrs?|months?|mo\.?|monat\w*|mon\.?|jahr\w*|j\.)"#
+    /// Units after a number: months or years in the app's languages.
+    private static let unit = #"(měsíc\w*|mesic\w*|mesiac\w*|miesi\w*|meses|mesi|mese|mês|mois|maand\w*|měs\.?|mes\.?|m\.|let|lata|lat|roky|rok\w*|years?|yrs?|months?|mo\.?|monat\w*|mon\.?|jahr\w*|j\.|jaar|ans?|ann[io]|años?|anos?)"#
 
     private static func months(_ n: Int, _ unit: String) -> Int {
         let u = unit.lowercased()
-        let years = u.hasPrefix("let") || u.hasPrefix("rok") || u.hasPrefix("year") || u.hasPrefix("yr")
-            || u.hasPrefix("jahr") || u == "j."
+        let years = u.hasPrefix("let") || u.hasPrefix("lat") || u.hasPrefix("rok") || u.hasPrefix("year") || u.hasPrefix("yr")
+            || u.hasPrefix("jahr") || u == "j." || u == "jaar" || u.hasPrefix("an") || u.hasPrefix("añ")
         return years ? n * 12 : n
     }
 
@@ -176,8 +199,8 @@ enum ReceiptParser {
     /// "Záruka 36 měsíců" or "5 let záruka" is the whole length. The longest one found wins,
     /// since a receipt often lists the legal warranty and the bought extension separately.
     static func warranty(in text: String) -> (months: Int, extended: Bool)? {
-        let word = #"(?:záruk|zaruk|garanc|garantie|gewährleist|gewahrleist|warrant)\w*"#
-        let extensionWord = #"(?:prodlouž|prodlouz|rozšíř|rozsir|extended|extra|verlänger|verlanger|erweitert)\w*"#
+        let word = #"(?:záruk|zaruk|garan|gwarancj|gewährleist|gewahrleist|warrant)\w*"#
+        let extensionWord = #"(?:prodlouž|prodlouz|rozšíř|rozsir|predĺž|predlz|rozšír|przedłuż|przedluz|rozszerz|extended|extra|verlänger|verlanger|erweitert|verleng|uitgebreid)\w*"#
         var found: [Int] = []
 
         // Added on top: "+3 roky záruky", "prodloužená záruka o 3 roky", "extended warranty +2 years".

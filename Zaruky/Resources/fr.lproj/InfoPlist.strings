@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "Garanties";
+"NSCameraUsageDescription" = "L’appareil photo sert à scanner les tickets.";
+"NSPhotoLibraryUsageDescription" = "L’accès aux Photos permet de choisir la photo d’un ticket.";

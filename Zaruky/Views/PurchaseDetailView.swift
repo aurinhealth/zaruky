@@ -430,20 +430,11 @@ struct PurchaseDetailView: View {
     }
 
     private func ringUnit(_ days: Int) -> String {
-        if days < 0 { return L("dní", "days", "Tage") }
-        if days <= 60 {
-            if L10n.isGerman { return days == 1 ? "Tag" : "Tage" }
-            return L10n.isEnglish ? (days == 1 ? "day" : "days")
-                : AppFormat.czechPlural(days, one: "den", few: "dny", many: "dní")
-        }
+        if days < 0 { return AppFormat.word(0, .day) }
+        if days <= 60 { return AppFormat.word(days, .day) }
         let months = Int((Double(days) / 30.44).rounded())
-        if !showsYears(months) {
-            if L10n.isGerman { return "Monate" }
-            return L10n.isEnglish ? "months" : AppFormat.czechPlural(months, one: "měsíc", few: "měsíce", many: "měsíců")
-        }
-        let years = months / 12
-        if L10n.isGerman { return years == 1 ? "Jahr" : "Jahre" }
-        return L10n.isEnglish ? (years == 1 ? "year" : "years") : AppFormat.czechPlural(years, one: "rok", few: "roky", many: "let")
+        if !showsYears(months) { return AppFormat.word(months, .month) }
+        return AppFormat.word(months / 12, .year)
     }
 
     // MARK: Actions

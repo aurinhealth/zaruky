@@ -13,13 +13,27 @@ enum AppSettings {
 
     static let defaultReminderDays = 30
     static let defaultWarranty = 24
-    /// Czech koruna in Czech, euro in German, and koruna in English (the app is made in Czechia).
-    static var defaultCurrency: String { L10n.isGerman ? "EUR" : "CZK" }
+    /// The currency of the phone's region (koruna in Czechia, euro in Germany…). Without one,
+    /// a currency that fits the app language.
+    static var defaultCurrency: String {
+        if let code = Locale.current.currency?.identifier, Locale.commonISOCurrencyCodes.contains(code) { return code }
+        switch L10n.language {
+        case .cs: return "CZK"
+        case .pl: return "PLN"
+        case .en: return "USD"
+        case .pt: return "BRL"
+        default: return "EUR"
+        }
+    }
 
     static let reminderDayOptions = [7, 14, 30, 60, 90]
     static let warrantyOptions = [6, 12, 24, 36, 48, 60]
     /// Currencies people around here actually pay in, shown first and in the receipt form.
-    static let commonCurrencies = ["CZK", "EUR", "USD", "GBP", "PLN", "HUF", "CHF"]
+    /// The default currency comes first when it isn't one of them.
+    static var commonCurrencies: [String] {
+        let base = ["CZK", "EUR", "USD", "GBP", "PLN", "HUF", "CHF"]
+        return base.contains(defaultCurrency) ? base : [defaultCurrency] + base
+    }
 
     /// Every currency iOS knows, common ones first, the rest sorted by name in the app language.
     static let allCurrencies: [String] = {
@@ -59,6 +73,7 @@ enum AppSettings {
         case "PLN": "zł"
         case "HUF": "Ft"
         case "CHF": "CHF"
+        case "BRL": "R$"
         default: code
         }
     }
