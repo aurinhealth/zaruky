@@ -114,10 +114,14 @@ struct PurchaseDetailView: View {
                 Text(L("Upozornění jsou v iOS vypnutá, takže připomínka konce záruky nepřijde.", "Notifications are off in iOS, so the warranty reminder won't arrive.", "Mitteilungen sind in iOS aus, die Garantie-Erinnerung kommt also nicht an."))
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
-                Button(L("Zapnout v Nastavení", "Turn on in Settings", "In Einstellungen einschalten")) {
+                Button {
                     if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
                         UIApplication.shared.open(url)
                     }
+                } label: {
+                    Text(L("Zapnout v Nastavení", "Turn on in Settings", "In Einstellungen einschalten"))
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
                 }
                 .font(.subheadline.weight(.semibold))
             }
@@ -415,18 +419,21 @@ struct PurchaseDetailView: View {
         return L("Do \(end). Připomeneme se \(AppFormat.days(NotificationService.daysBefore)) předem.", "Until \(end). We'll remind you \(AppFormat.days(NotificationService.daysBefore)) before.", "Bis \(end). Wir erinnern dich \(AppFormat.days(NotificationService.daysBefore)) vorher.")
     }
 
+    /// Whole years only when the months divide evenly, so 26 months never reads as "2 years".
+    private func showsYears(_ months: Int) -> Bool { months >= 24 && months % 12 == 0 }
+
     private func ringValue(_ days: Int) -> String {
         if days < 0 { return "0" }
         if days <= 60 { return "\(days)" }
-        let months = days / 30
-        return months < 24 ? "\(months)" : "\(months / 12)"
+        let months = Int((Double(days) / 30.44).rounded())
+        return showsYears(months) ? "\(months / 12)" : "\(months)"
     }
 
     private func ringUnit(_ days: Int) -> String {
         if days < 0 { return AppFormat.word(0, .day) }
         if days <= 60 { return AppFormat.word(days, .day) }
-        let months = days / 30
-        if months < 24 { return AppFormat.word(months, .month) }
+        let months = Int((Double(days) / 30.44).rounded())
+        if !showsYears(months) { return AppFormat.word(months, .month) }
         return AppFormat.word(months / 12, .year)
     }
 
